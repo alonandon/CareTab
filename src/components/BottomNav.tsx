@@ -1,8 +1,8 @@
 import { NavLink } from 'react-router-dom'
-import { Clock, DollarSign, Receipt, Home } from 'lucide-react'
+import { Clock, DollarSign, Receipt, LayoutDashboard } from 'lucide-react'
 
 const navItems = [
-  { to: '/', icon: Home, label: 'Home' },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Home' },
   { to: '/hours', icon: Clock, label: 'Hours' },
   { to: '/expenses', icon: Receipt, label: 'Expenses' },
   { to: '/payments', icon: DollarSign, label: 'Payments' },
@@ -18,7 +18,7 @@ export function BottomNav() {
             to={to}
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 px-3 py-2 text-xs ${
-                isActive ? 'text-indigo-600' : 'text-gray-500'
+                isActive ? 'text-blue-500' : 'text-gray-400'
               }`
             }
           >
