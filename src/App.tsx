@@ -8,6 +8,8 @@ import { SignupPage } from './pages/SignupPage'
 import { OnboardingPage } from './pages/OnboardingPage'
 import { AcceptInvitePage } from './pages/AcceptInvitePage'
 import { DashboardPage } from './pages/DashboardPage'
+import { HouseholdDetailPage } from './pages/HouseholdDetailPage'
+import { NannyInstanceDetailPage } from './pages/NannyInstanceDetailPage'
 import { HoursPage } from './pages/HoursPage'
 import { ExpensesPage } from './pages/ExpensesPage'
 import { PaymentsPage } from './pages/PaymentsPage'
@@ -31,6 +33,8 @@ function App() {
             <Route path="/onboarding" element={<OnboardingPage />} />
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/household/:id" element={<HouseholdDetailPage />} />
+              <Route path="/nanny-instance/:id" element={<NannyInstanceDetailPage />} />
               <Route path="/hours" element={<HoursPage />} />
               <Route path="/expenses" element={<ExpensesPage />} />
               <Route path="/payments" element={<PaymentsPage />} />
