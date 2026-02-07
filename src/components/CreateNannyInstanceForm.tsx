@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { UserPlus } from 'lucide-react'
-import { createNannyInstance } from '../hooks/useHousehold'
-import type { Profile } from '../types'
 import { format } from 'date-fns'
+import { createNannyInstance } from '../hooks/useHousehold'
+import { RateConfigFields } from './RateConfigFields'
+import type { RateConfigValues } from './RateConfigFields'
+import type { Profile } from '../types'
 
 interface Props {
   householdId: string
@@ -13,12 +15,15 @@ interface Props {
 export function CreateNannyInstanceForm({ householdId, nannies, onCreated }: Props) {
   const [nannyId, setNannyId] = useState('')
   const [name, setName] = useState('')
-  const [rateType, setRateType] = useState<'hourly' | 'weekly'>('hourly')
-  const [rateAmount, setRateAmount] = useState('')
-  const [overtimeEnabled, setOvertimeEnabled] = useState(false)
-  const [overtimeMultiplier, setOvertimeMultiplier] = useState('1.50')
-  const [overtimeTriggerType, setOvertimeTriggerType] = useState<'daily' | 'weekly'>('daily')
-  const [overtimeTriggerHours, setOvertimeTriggerHours] = useState('8')
+  const [rateValues, setRateValues] = useState<RateConfigValues>({
+    rateType: 'hourly',
+    rateAmount: '',
+    overtimeEnabled: false,
+    overtimeMultiplier: '1.50',
+    overtimeTriggerType: 'daily',
+    overtimeTriggerHours: '8',
+    effectiveDate: format(new Date(), 'yyyy-MM-dd'),
+  })
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -26,31 +31,44 @@ export function CreateNannyInstanceForm({ householdId, nannies, onCreated }: Pro
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!nannyId || !name.trim() || !rateAmount) return
+    if (!nannyId || !name.trim() || !rateValues.rateAmount) return
 
     setError('')
     setSubmitting(true)
 
     const result = await createNannyInstance(householdId, nannyId, name.trim(), {
-      rate_type: rateType,
-      rate_amount: parseFloat(rateAmount),
-      overtime_enabled: overtimeEnabled,
-      overtime_multiplier: overtimeEnabled ? parseFloat(overtimeMultiplier) : undefined,
-      overtime_trigger_type: overtimeEnabled ? overtimeTriggerType : undefined,
-      overtime_trigger_hours: overtimeEnabled ? parseFloat(overtimeTriggerHours) : undefined,
-      effective_date: format(new Date(), 'yyyy-MM-dd'),
+      rate_type: rateValues.rateType,
+      rate_amount: parseFloat(rateValues.rateAmount),
+      overtime_enabled: rateValues.overtimeEnabled,
+      overtime_multiplier: rateValues.overtimeEnabled
+        ? parseFloat(rateValues.overtimeMultiplier)
+        : undefined,
+      overtime_trigger_type: rateValues.overtimeEnabled
+        ? rateValues.overtimeTriggerType
+        : undefined,
+      overtime_trigger_hours: rateValues.overtimeEnabled
+        ? parseFloat(rateValues.overtimeTriggerHours)
+        : undefined,
+      effective_date: rateValues.effectiveDate,
     })
 
     if (!result) {
-      setError('Failed to create nanny instance. Please try again.')
+      setError('Failed to create rate profile. Please try again.')
       setSubmitting(false)
       return
     }
 
     setName('')
     setNannyId('')
-    setRateAmount('')
-    setOvertimeEnabled(false)
+    setRateValues({
+      rateType: 'hourly',
+      rateAmount: '',
+      overtimeEnabled: false,
+      overtimeMultiplier: '1.50',
+      overtimeTriggerType: 'daily',
+      overtimeTriggerHours: '8',
+      effectiveDate: format(new Date(), 'yyyy-MM-dd'),
+    })
     setSubmitting(false)
     onCreated()
   }
@@ -104,101 +122,12 @@ export function CreateNannyInstanceForm({ householdId, nannies, onCreated }: Pro
         />
       </div>
 
-      {/* Rate config */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label htmlFor="rate-type" className="block text-sm font-medium text-gray-700 mb-1">
-            Rate type
-          </label>
-          <select
-            id="rate-type"
-            value={rateType}
-            onChange={(e) => setRateType(e.target.value as 'hourly' | 'weekly')}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="hourly">Hourly</option>
-            <option value="weekly">Weekly</option>
-          </select>
-        </div>
-        <div>
-          <label htmlFor="rate-amount" className="block text-sm font-medium text-gray-700 mb-1">
-            Rate ($)
-          </label>
-          <input
-            id="rate-amount"
-            type="number"
-            required
-            min="0"
-            step="0.01"
-            value={rateAmount}
-            onChange={(e) => setRateAmount(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            placeholder="25.00"
-          />
-        </div>
-      </div>
-
-      {/* Overtime toggle */}
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={overtimeEnabled}
-          onChange={(e) => setOvertimeEnabled(e.target.checked)}
-          className="h-4 w-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
-        />
-        <span className="text-sm text-gray-700">Enable overtime</span>
-      </label>
-
-      {overtimeEnabled && (
-        <div className="grid grid-cols-3 gap-3 rounded-lg bg-gray-50 p-3">
-          <div>
-            <label htmlFor="ot-multiplier" className="block text-xs font-medium text-gray-600 mb-1">
-              Multiplier
-            </label>
-            <input
-              id="ot-multiplier"
-              type="number"
-              min="1"
-              step="0.01"
-              value={overtimeMultiplier}
-              onChange={(e) => setOvertimeMultiplier(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label htmlFor="ot-trigger-type" className="block text-xs font-medium text-gray-600 mb-1">
-              Trigger
-            </label>
-            <select
-              id="ot-trigger-type"
-              value={overtimeTriggerType}
-              onChange={(e) => setOvertimeTriggerType(e.target.value as 'daily' | 'weekly')}
-              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            >
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="ot-trigger-hours" className="block text-xs font-medium text-gray-600 mb-1">
-              After (hrs)
-            </label>
-            <input
-              id="ot-trigger-hours"
-              type="number"
-              min="1"
-              step="0.5"
-              value={overtimeTriggerHours}
-              onChange={(e) => setOvertimeTriggerHours(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-      )}
+      {/* Rate config fields (shared component) */}
+      <RateConfigFields values={rateValues} onChange={setRateValues} />
 
       <button
         type="submit"
-        disabled={submitting || !nannyId || !name.trim() || !rateAmount}
+        disabled={submitting || !nannyId || !name.trim() || !rateValues.rateAmount}
         className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
       >
         {submitting ? 'Creating...' : 'Create rate profile'}

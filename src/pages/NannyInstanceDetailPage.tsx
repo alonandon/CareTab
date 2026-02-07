@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Clock, DollarSign } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
+import { RateHistory } from '../components/RateHistory'
+import { RateConfigForm } from '../components/RateConfigForm'
 import type { NannyInstance, RateConfig, Profile, Household } from '../types'
 
 interface InstanceFull extends NannyInstance {
@@ -12,15 +15,20 @@ interface InstanceFull extends NannyInstance {
 
 export function NannyInstanceDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const { profile } = useAuth()
   const navigate = useNavigate()
   const [instance, setInstance] = useState<InstanceFull | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const fetch = useCallback(async () => {
+  const isParent = profile?.role === 'parent'
+
+  const fetchInstance = useCallback(async () => {
     if (!id) return
     const { data } = await supabase
       .from('nanny_instances')
-      .select('*, profiles:nanny_id(id, email, full_name, role, created_at, updated_at), households(*), rate_configs(*)')
+      .select(
+        '*, profiles:nanny_id(id, email, full_name, role, created_at, updated_at), households(*), rate_configs(*)'
+      )
       .eq('id', id)
       .single()
     setInstance(data as InstanceFull | null)
@@ -28,8 +36,8 @@ export function NannyInstanceDetailPage() {
   }, [id])
 
   useEffect(() => {
-    fetch()
-  }, [fetch])
+    fetchInstance()
+  }, [fetchInstance])
 
   if (loading) {
     return (
@@ -53,10 +61,6 @@ export function NannyInstanceDetailPage() {
     )
   }
 
-  const sortedRates = [...instance.rate_configs].sort(
-    (a, b) => b.effective_date.localeCompare(a.effective_date)
-  )
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -76,51 +80,27 @@ export function NannyInstanceDetailPage() {
 
       {/* Rate History */}
       <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-900 mb-3">Rate History</h2>
-
-        {sortedRates.length === 0 ? (
-          <p className="text-sm text-gray-400">No rates configured.</p>
-        ) : (
-          <div className="space-y-3">
-            {sortedRates.map((rate, idx) => (
-              <div
-                key={rate.id}
-                className={`rounded-lg p-3 ${
-                  idx === 0 ? 'bg-blue-50 border border-blue-200' : 'bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {rate.rate_type === 'hourly' ? (
-                      <Clock size={14} className="text-blue-500" />
-                    ) : (
-                      <DollarSign size={14} className="text-green-500" />
-                    )}
-                    <span className="text-sm font-semibold text-gray-900">
-                      ${rate.rate_amount.toFixed(2)}/{rate.rate_type === 'hourly' ? 'hr' : 'wk'}
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-500">
-                    {idx === 0 ? 'Current' : `From ${rate.effective_date}`}
-                  </span>
-                </div>
-
-                {rate.overtime_enabled && (
-                  <p className="mt-1.5 text-xs text-gray-600">
-                    Overtime: {rate.overtime_multiplier}x after{' '}
-                    {rate.overtime_trigger_hours}h/{rate.overtime_trigger_type}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <h2 className="text-sm font-semibold text-gray-900 mb-3">
+          Rate History
+        </h2>
+        <RateHistory rates={instance.rate_configs} />
       </section>
 
-      {/* Placeholder for future: time entries, expenses, payments for this instance */}
+      {/* Add new rate — parent only */}
+      {isParent && (
+        <section>
+          <RateConfigForm
+            nannyInstanceId={instance.id}
+            onCreated={fetchInstance}
+          />
+        </section>
+      )}
+
+      {/* Placeholder for future: time entries, expenses, payments */}
       <section className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center">
         <p className="text-sm text-gray-400">
-          Time entries, expenses, and payments for this rate profile will appear here.
+          Time entries, expenses, and payments for this rate profile will appear
+          here.
         </p>
       </section>
     </div>
