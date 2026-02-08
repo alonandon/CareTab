@@ -108,7 +108,7 @@ export function SideNav() {
       aria-label="Main navigation"
     >
       <div className="px-4 py-5 border-b border-gray-100">
-        <h1 className="text-lg font-bold text-gray-900">Keeper</h1>
+        <h1 className="text-lg font-bold text-gray-900">CareTab</h1>
       </div>
 
       <div className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">

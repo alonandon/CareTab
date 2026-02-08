@@ -162,7 +162,7 @@ export function HistoryPage() {
   const handleExport = useCallback(() => {
     const csv = transactionsToCsv(filtered)
     const dateStr = format(new Date(), 'yyyy-MM-dd')
-    downloadCsv(csv, `keeper-history-${dateStr}.csv`)
+    downloadCsv(csv, `caretab-history-${dateStr}.csv`)
   }, [filtered])
 
   const toggleSort = useCallback(

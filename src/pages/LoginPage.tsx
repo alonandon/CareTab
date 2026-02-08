@@ -34,7 +34,7 @@ export function LoginPage() {
     <div className="min-h-screen flex flex-col justify-center px-6 bg-white">
       <div className="w-full max-w-sm mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Keeper</h1>
+          <h1 className="text-3xl font-bold text-gray-900">CareTab</h1>
           <p className="mt-2 text-gray-500">Sign in to your account</p>
         </div>
 
