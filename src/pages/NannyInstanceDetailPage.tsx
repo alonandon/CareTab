@@ -7,9 +7,12 @@ import { RateHistory } from '../components/RateHistory'
 import { RateConfigForm } from '../components/RateConfigForm'
 import { TimeEntryForm } from '../components/TimeEntryForm'
 import { TimeEntryList } from '../components/TimeEntryList'
+import { ExpenseForm } from '../components/ExpenseForm'
+import { ExpenseList } from '../components/ExpenseList'
 import { useTimeEntries } from '../hooks/useTimeEntries'
+import { useExpenses } from '../hooks/useExpenses'
 import type { TimeEntryWithPeriods, NannyInstanceForSelector } from '../hooks/useTimeEntries'
-import type { NannyInstance, RateConfig, Profile, Household } from '../types'
+import type { NannyInstance, RateConfig, Profile, Household, Expense } from '../types'
 
 interface InstanceFull extends NannyInstance {
   profiles: Profile
@@ -23,8 +26,10 @@ export function NannyInstanceDetailPage() {
   const navigate = useNavigate()
   const [instance, setInstance] = useState<InstanceFull | null>(null)
   const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
+  const [showTimeForm, setShowTimeForm] = useState(false)
   const [editEntry, setEditEntry] = useState<TimeEntryWithPeriods | null>(null)
+  const [showExpenseForm, setShowExpenseForm] = useState(false)
+  const [editExpense, setEditExpense] = useState<Expense | null>(null)
 
   const isParent = profile?.role === 'parent'
   const isNanny = profile?.role === 'nanny'
@@ -47,6 +52,7 @@ export function NannyInstanceDetailPage() {
   }, [fetchInstance])
 
   const { entries, loading: entriesLoading, refresh: refreshEntries } = useTimeEntries(id)
+  const { expenses, loading: expensesLoading, refresh: refreshExpenses } = useExpenses(id)
 
   // Build a NannyInstanceForSelector for the form
   const instanceForForm: NannyInstanceForSelector | null = instance
@@ -78,15 +84,26 @@ export function NannyInstanceDetailPage() {
     )
   }
 
-  const handleEdit = (entry: TimeEntryWithPeriods) => {
+  const handleEditEntry = (entry: TimeEntryWithPeriods) => {
     setEditEntry(entry)
-    setShowForm(true)
+    setShowTimeForm(true)
   }
 
-  const handleSaved = () => {
-    setShowForm(false)
+  const handleEntrySaved = () => {
+    setShowTimeForm(false)
     setEditEntry(null)
     refreshEntries()
+  }
+
+  const handleEditExpense = (expense: Expense) => {
+    setEditExpense(expense)
+    setShowExpenseForm(true)
+  }
+
+  const handleExpenseSaved = () => {
+    setShowExpenseForm(false)
+    setEditExpense(null)
+    refreshExpenses()
   }
 
   return (
@@ -130,9 +147,9 @@ export function NannyInstanceDetailPage() {
           <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
             Time Entries
           </h2>
-          {isNanny && !showForm && (
+          {isNanny && !showTimeForm && (
             <button
-              onClick={() => { setEditEntry(null); setShowForm(true) }}
+              onClick={() => { setEditEntry(null); setShowTimeForm(true) }}
               className="flex items-center gap-1 text-sm font-medium text-blue-500 hover:text-blue-600"
             >
               <Plus size={16} />
@@ -141,15 +158,15 @@ export function NannyInstanceDetailPage() {
           )}
         </div>
 
-        {isNanny && showForm && instanceForForm && user && (
+        {isNanny && showTimeForm && instanceForForm && user && (
           <div className="mb-4">
             <TimeEntryForm
               instances={[instanceForForm]}
               userId={user.id}
               editEntry={editEntry ?? undefined}
               defaultInstanceId={instance.id}
-              onSaved={handleSaved}
-              onCancel={() => { setShowForm(false); setEditEntry(null) }}
+              onSaved={handleEntrySaved}
+              onCancel={() => { setShowTimeForm(false); setEditEntry(null) }}
             />
           </div>
         )}
@@ -162,8 +179,51 @@ export function NannyInstanceDetailPage() {
           <TimeEntryList
             entries={entries}
             rates={instance.rate_configs}
-            onEdit={handleEdit}
+            onEdit={handleEditEntry}
             onRefresh={refreshEntries}
+          />
+        )}
+      </section>
+
+      {/* Expenses */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+            Expenses
+          </h2>
+          {isNanny && !showExpenseForm && (
+            <button
+              onClick={() => { setEditExpense(null); setShowExpenseForm(true) }}
+              className="flex items-center gap-1 text-sm font-medium text-blue-500 hover:text-blue-600"
+            >
+              <Plus size={16} />
+              New expense
+            </button>
+          )}
+        </div>
+
+        {isNanny && showExpenseForm && instanceForForm && user && (
+          <div className="mb-4">
+            <ExpenseForm
+              instances={[instanceForForm]}
+              userId={user.id}
+              editExpense={editExpense ?? undefined}
+              defaultInstanceId={instance.id}
+              onSaved={handleExpenseSaved}
+              onCancel={() => { setShowExpenseForm(false); setEditExpense(null) }}
+            />
+          </div>
+        )}
+
+        {expensesLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+          </div>
+        ) : (
+          <ExpenseList
+            expenses={expenses}
+            onEdit={handleEditExpense}
+            onRefresh={refreshExpenses}
           />
         )}
       </section>
