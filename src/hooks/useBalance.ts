@@ -139,28 +139,11 @@ export function useBalance(nannyInstanceId: string | undefined) {
     fetchBalance()
   }, [fetchBalance])
 
-  // Realtime: re-fetch when any relevant table changes
+  // Poll for updates every 30s
   useEffect(() => {
     if (!nannyInstanceId) return
-
-    const channels = [
-      supabase
-        .channel(`balance_te:${nannyInstanceId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'time_entries', filter: `nanny_instance_id=eq.${nannyInstanceId}` }, () => fetchBalance())
-        .subscribe(),
-      supabase
-        .channel(`balance_exp:${nannyInstanceId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses', filter: `nanny_instance_id=eq.${nannyInstanceId}` }, () => fetchBalance())
-        .subscribe(),
-      supabase
-        .channel(`balance_pay:${nannyInstanceId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'payments', filter: `nanny_instance_id=eq.${nannyInstanceId}` }, () => fetchBalance())
-        .subscribe(),
-    ]
-
-    return () => {
-      channels.forEach((ch) => supabase.removeChannel(ch))
-    }
+    const id = setInterval(fetchBalance, 30_000)
+    return () => clearInterval(id)
   }, [nannyInstanceId, fetchBalance])
 
   return { balance, loading, refresh: fetchBalance }
@@ -231,19 +214,11 @@ export function useMultiBalance(instanceIds: string[]) {
     fetchAll()
   }, [fetchAll])
 
-  // Realtime for each instance
+  // Poll for updates every 30s
   useEffect(() => {
     if (instanceIds.length === 0) return
-
-    const channels = instanceIds.flatMap((id) => [
-      supabase.channel(`mbal_te:${id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'time_entries', filter: `nanny_instance_id=eq.${id}` }, () => fetchAll()).subscribe(),
-      supabase.channel(`mbal_exp:${id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'expenses', filter: `nanny_instance_id=eq.${id}` }, () => fetchAll()).subscribe(),
-      supabase.channel(`mbal_pay:${id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'payments', filter: `nanny_instance_id=eq.${id}` }, () => fetchAll()).subscribe(),
-    ])
-
-    return () => {
-      channels.forEach((ch) => supabase.removeChannel(ch))
-    }
+    const id = setInterval(fetchAll, 30_000)
+    return () => clearInterval(id)
   }, [instanceIds.join(','), fetchAll]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return { balances, loading, refresh: fetchAll }

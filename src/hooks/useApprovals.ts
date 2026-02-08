@@ -112,42 +112,11 @@ export function usePendingApprovals(userId: string | undefined) {
     fetchAll()
   }, [fetchAll])
 
-  // Realtime subscriptions — listen for any changes on time_entries and expenses
+  // Poll for updates every 30s
   useEffect(() => {
     if (instanceIds.length === 0) return
-
-    const channels = instanceIds.flatMap((id) => [
-      supabase
-        .channel(`approvals_te:${id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'time_entries',
-            filter: `nanny_instance_id=eq.${id}`,
-          },
-          () => fetchAll()
-        )
-        .subscribe(),
-      supabase
-        .channel(`approvals_exp:${id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'expenses',
-            filter: `nanny_instance_id=eq.${id}`,
-          },
-          () => fetchAll()
-        )
-        .subscribe(),
-    ])
-
-    return () => {
-      channels.forEach((ch) => supabase.removeChannel(ch))
-    }
+    const id = setInterval(fetchAll, 30_000)
+    return () => clearInterval(id)
   }, [instanceIds.join(','), fetchAll]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return { timeEntries, expenses, loading, refresh: fetchAll }

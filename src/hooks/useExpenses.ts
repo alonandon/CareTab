@@ -29,29 +29,11 @@ export function useExpenses(nannyInstanceId: string | undefined) {
     fetchExpenses()
   }, [fetchExpenses])
 
-  // Realtime subscription
+  // Poll for updates every 30s
   useEffect(() => {
     if (!nannyInstanceId) return
-
-    const channel = supabase
-      .channel(`expenses:${nannyInstanceId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'expenses',
-          filter: `nanny_instance_id=eq.${nannyInstanceId}`,
-        },
-        () => {
-          fetchExpenses()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    const id = setInterval(fetchExpenses, 30_000)
+    return () => clearInterval(id)
   }, [nannyInstanceId, fetchExpenses])
 
   return { expenses, loading, refresh: fetchExpenses }

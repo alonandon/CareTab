@@ -47,29 +47,11 @@ export function useTimeEntries(nannyInstanceId: string | undefined) {
     fetchEntries()
   }, [fetchEntries])
 
-  // Realtime subscription
+  // Poll for updates every 30s
   useEffect(() => {
     if (!nannyInstanceId) return
-
-    const channel = supabase
-      .channel(`time_entries:${nannyInstanceId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'time_entries',
-          filter: `nanny_instance_id=eq.${nannyInstanceId}`,
-        },
-        () => {
-          fetchEntries()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    const id = setInterval(fetchEntries, 30_000)
+    return () => clearInterval(id)
   }, [nannyInstanceId, fetchEntries])
 
   return { entries, loading, refresh: fetchEntries }

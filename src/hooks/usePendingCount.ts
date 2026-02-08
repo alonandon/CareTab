@@ -58,24 +58,11 @@ export function usePendingCount(userId: string | undefined, isParent: boolean) {
     fetchCount()
   }, [fetchCount])
 
-  // Realtime: re-count on changes
+  // Poll for updates every 30s
   useEffect(() => {
     if (!userId || !isParent) return
-
-    const ch1 = supabase
-      .channel('pending_count_te')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'time_entries' }, () => fetchCount())
-      .subscribe()
-
-    const ch2 = supabase
-      .channel('pending_count_exp')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => fetchCount())
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(ch1)
-      supabase.removeChannel(ch2)
-    }
+    const id = setInterval(fetchCount, 30_000)
+    return () => clearInterval(id)
   }, [userId, isParent, fetchCount])
 
   return count
