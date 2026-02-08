@@ -14,6 +14,7 @@ import { HoursPage } from './pages/HoursPage'
 import { ExpensesPage } from './pages/ExpensesPage'
 import { PaymentsPage } from './pages/PaymentsPage'
 import { ApprovalsPage } from './pages/ApprovalsPage'
+import { HistoryPage } from './pages/HistoryPage'
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
               <Route path="/hours" element={<HoursPage />} />
               <Route path="/expenses" element={<ExpensesPage />} />
               <Route path="/payments" element={<PaymentsPage />} />
+              <Route path="/history" element={<HistoryPage />} />
             </Route>
           </Route>
 

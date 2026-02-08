@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Clock, DollarSign, Receipt, LayoutDashboard, ClipboardCheck } from 'lucide-react'
+import { Clock, DollarSign, Receipt, LayoutDashboard, ClipboardCheck, FileText } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 const nannyItems = [
@@ -7,14 +7,14 @@ const nannyItems = [
   { to: '/hours', icon: Clock, label: 'Hours' },
   { to: '/expenses', icon: Receipt, label: 'Expenses' },
   { to: '/payments', icon: DollarSign, label: 'Payments' },
+  { to: '/history', icon: FileText, label: 'History' },
 ]
 
 const parentItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Home' },
   { to: '/approvals', icon: ClipboardCheck, label: 'Approvals' },
-  { to: '/hours', icon: Clock, label: 'Hours' },
-  { to: '/expenses', icon: Receipt, label: 'Expenses' },
   { to: '/payments', icon: DollarSign, label: 'Payments' },
+  { to: '/history', icon: FileText, label: 'History' },
 ]
 
 export function BottomNav() {
