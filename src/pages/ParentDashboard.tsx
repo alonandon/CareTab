@@ -1,16 +1,24 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Plus, Home } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { useHouseholds } from '../hooks/useHousehold'
+import { useHouseholds, useHouseholdDetail } from '../hooks/useHousehold'
+import { useMultiBalance } from '../hooks/useBalance'
 import { HouseholdCard } from '../components/HouseholdCard'
 import { CreateHouseholdForm } from '../components/CreateHouseholdForm'
 import { SkeletonDashboard } from '../components/Skeleton'
 import { EmptyState } from '../components/EmptyState'
+import type { Balance } from '../hooks/useBalance'
 
 export function ParentDashboard() {
   const { profile } = useAuth()
   const { households, loading, refresh } = useHouseholds()
   const [showCreateForm, setShowCreateForm] = useState(false)
+
+  // Collect all nanny instance IDs across all households for balance fetching
+  // households from useHouseholds don't include nanny_instances, so we need
+  // to fetch them separately. We use the household_members to identify nannies
+  // and then fetch balances via a separate detail query.
+  // For now, pass household IDs to HouseholdCard which will fetch its own balance.
 
   return (
     <div className="space-y-6">
@@ -44,7 +52,7 @@ export function ParentDashboard() {
         ) : (
           <div className="space-y-3">
             {households.map((h) => (
-              <HouseholdCard key={h.id} household={h} />
+              <HouseholdCardWithBalance key={h.id} household={h} />
             ))}
 
             {(households.length === 0 || showCreateForm) && (
@@ -69,5 +77,41 @@ export function ParentDashboard() {
         )}
       </section>
     </div>
+  )
+}
+
+// Wrapper that fetches balance for a single household
+function HouseholdCardWithBalance({ household }: { household: Parameters<typeof HouseholdCard>[0]['household'] }) {
+  const { household: detail } = useHouseholdDetail(household.id)
+
+  const instanceIds = useMemo(
+    () => (detail?.nanny_instances ?? []).filter((ni) => ni.is_active).map((ni) => ni.id),
+    [detail]
+  )
+
+  const { balances, loading: balancesLoading } = useMultiBalance(instanceIds)
+
+  // Aggregate balance across all nanny instances in this household
+  const householdBalance = useMemo<Balance | null>(() => {
+    if (instanceIds.length === 0) return null
+    const bal: Balance = { approvedOwed: 0, pendingApproval: 0, totalOwed: 0 }
+    let hasData = false
+    for (const id of instanceIds) {
+      const b = balances[id]
+      if (!b) continue
+      hasData = true
+      bal.approvedOwed += b.approvedOwed
+      bal.pendingApproval += b.pendingApproval
+      bal.totalOwed += b.totalOwed
+    }
+    return hasData ? bal : null
+  }, [instanceIds, balances])
+
+  return (
+    <HouseholdCard
+      household={household}
+      balance={householdBalance}
+      balanceLoading={balancesLoading}
+    />
   )
 }

@@ -1,12 +1,16 @@
 import { useNavigate } from 'react-router-dom'
 import { Home, Users, ChevronRight } from 'lucide-react'
+import { BalanceInline } from './BalanceCard'
 import type { HouseholdWithMembers } from '../hooks/useHousehold'
+import type { Balance } from '../hooks/useBalance'
 
 interface Props {
   household: HouseholdWithMembers
+  balance?: Balance | null
+  balanceLoading?: boolean
 }
 
-export function HouseholdCard({ household }: Props) {
+export function HouseholdCard({ household, balance, balanceLoading }: Props) {
   const navigate = useNavigate()
   const parents = household.household_members.filter((m) => m.role === 'parent')
   const nannies = household.household_members.filter((m) => m.role === 'nanny')
@@ -62,6 +66,10 @@ export function HouseholdCard({ household }: Props) {
             ))}
           </div>
         </div>
+      )}
+
+      {balance && (
+        <BalanceInline balance={balance} loading={balanceLoading} />
       )}
     </button>
   )

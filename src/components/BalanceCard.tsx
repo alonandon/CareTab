@@ -79,7 +79,7 @@ export function BalanceInline({ balance, loading }: { balance: Balance; loading?
     return <div className="h-3 w-16 animate-pulse rounded bg-gray-100" />
   }
 
-  if (balance.totalOwed === 0 && balance.pendingApproval === 0) return null
+  if (balance.totalOwed === 0 && balance.pendingApproval === 0 && balance.approvedOwed === 0) return null
 
   const isZeroOrCredit = balance.totalOwed <= 0
 
