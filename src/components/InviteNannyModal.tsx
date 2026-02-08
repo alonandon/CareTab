@@ -55,12 +55,17 @@ export function InviteNannyModal({ householdId, open, onClose, onInvited }: Prop
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="fixed inset-0 bg-black/40" onClick={handleClose} />
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="invite-title"
+    >
+      <div className="fixed inset-0 bg-black/40" onClick={handleClose} aria-hidden="true" />
       <div className="relative w-full max-w-sm bg-white rounded-t-2xl sm:rounded-2xl p-5 shadow-xl mx-4 mb-0 sm:mb-0">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Invite a Nanny</h2>
-          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600">
+          <h2 id="invite-title" className="text-lg font-semibold text-gray-900">Invite a Nanny</h2>
+          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600" aria-label="Close">
             <X size={20} />
           </button>
         </div>

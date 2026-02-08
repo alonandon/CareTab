@@ -11,6 +11,7 @@ import {
   ChevronDown,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { SkeletonList } from '../components/Skeleton'
 import { useNannyInstances, useHouseholdInstances } from '../hooks/useTimeEntries'
 import {
   useTransactions,
@@ -320,9 +321,7 @@ export function HistoryPage() {
 
       {/* Transaction list */}
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-        </div>
+        <SkeletonList count={5} />
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
           <p className="text-sm text-gray-500">

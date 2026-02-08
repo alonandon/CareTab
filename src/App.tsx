@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { ToastProvider } from './context/ToastContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { PublicRoute } from './components/PublicRoute'
 import { Layout } from './components/Layout'
@@ -15,10 +16,12 @@ import { ExpensesPage } from './pages/ExpensesPage'
 import { PaymentsPage } from './pages/PaymentsPage'
 import { ApprovalsPage } from './pages/ApprovalsPage'
 import { HistoryPage } from './pages/HistoryPage'
+import { ProfilePage } from './pages/ProfilePage'
 
 function App() {
   return (
     <AuthProvider>
+      <ToastProvider>
       <BrowserRouter>
         <Routes>
           {/* Public routes — redirect to dashboard if already signed in */}
@@ -42,6 +45,7 @@ function App() {
               <Route path="/expenses" element={<ExpensesPage />} />
               <Route path="/payments" element={<PaymentsPage />} />
               <Route path="/history" element={<HistoryPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Route>
 
@@ -49,6 +53,7 @@ function App() {
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
+      </ToastProvider>
     </AuthProvider>
   )
 }

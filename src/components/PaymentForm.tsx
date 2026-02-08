@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
+import { useToast } from '../context/ToastContext'
 import type { NannyInstanceForSelector } from '../hooks/useTimeEntries'
 import type { Payment } from '../types'
 import { logPayment } from '../hooks/usePayments'
@@ -35,6 +36,7 @@ export function PaymentForm({
   const [method, setMethod] = useState<Payment['method']>('cash')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const { success: showSuccess, error: showError } = useToast()
 
   const handleSubmit = async () => {
     if (!instanceId || !date || !amount) return
@@ -58,11 +60,13 @@ export function PaymentForm({
 
     if (!payment) {
       setError('Failed to log payment.')
+      showError('Failed to log payment.')
       setSubmitting(false)
       return
     }
 
     setSubmitting(false)
+    showSuccess('Payment logged.')
     onSaved()
   }
 
@@ -171,8 +175,12 @@ export function PaymentForm({
         disabled={submitting || !instanceId || !date || !amount}
         className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
       >
-        <DollarSign size={16} />
-        Log Payment
+        {submitting ? (
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+        ) : (
+          <DollarSign size={16} />
+        )}
+        {submitting ? 'Logging...' : 'Log Payment'}
       </button>
     </div>
   )

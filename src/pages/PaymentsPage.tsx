@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, DollarSign } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { SkeletonList } from '../components/Skeleton'
+import { EmptyState } from '../components/EmptyState'
 import {
   useNannyInstances,
   useHouseholdInstances,
@@ -58,19 +60,19 @@ export function PaymentsPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-        </div>
+        <SkeletonList count={4} />
       ) : (
         <>
           {instances.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-              <p className="text-sm text-gray-500">
-                {isParent
-                  ? 'No nanny connections yet. Set up a household and invite a nanny first.'
-                  : 'No rate profiles yet. Ask a parent to set one up for you.'}
-              </p>
-            </div>
+            <EmptyState
+              icon={DollarSign}
+              title={isParent ? 'No nanny connections yet' : 'No payments yet'}
+              description={
+                isParent
+                  ? 'Set up a household and invite a nanny first.'
+                  : 'Ask a parent to set up a rate profile for you.'
+              }
+            />
           ) : (
             <>
               {isParent && showForm && (

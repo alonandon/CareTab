@@ -19,20 +19,27 @@ export function RejectionModal({ title, onConfirm, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="rejection-title"
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40"
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Modal */}
       <div className="relative w-full max-w-md bg-white rounded-t-2xl sm:rounded-2xl p-5 space-y-4 mx-4 mb-0 sm:mb-0">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+          <h3 id="rejection-title" className="text-base font-semibold text-gray-900">{title}</h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
+            aria-label="Close"
           >
             <X size={20} />
           </button>

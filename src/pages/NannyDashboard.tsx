@@ -1,14 +1,16 @@
 import { useMemo } from 'react'
-import { LogOut } from 'lucide-react'
+import { Home } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholds, useNannyHouseholds } from '../hooks/useHousehold'
 import { useMultiBalance } from '../hooks/useBalance'
 import { BalanceInline } from '../components/BalanceCard'
+import { SkeletonDashboard } from '../components/Skeleton'
+import { EmptyState } from '../components/EmptyState'
 import type { Balance } from '../hooks/useBalance'
 
 export function NannyDashboard() {
-  const { profile, signOut } = useAuth()
+  const { profile } = useAuth()
   const { households, loading } = useHouseholds()
   const { instances } = useNannyHouseholds()
   const navigate = useNavigate()
@@ -36,20 +38,11 @@ export function NannyDashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Hi, {profile?.full_name || 'there'}
-          </h1>
-          <p className="mt-0.5 text-sm text-gray-500">Nanny Dashboard</p>
-        </div>
-        <button
-          onClick={signOut}
-          className="rounded-lg p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-          aria-label="Sign out"
-        >
-          <LogOut size={20} />
-        </button>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Hi, {profile?.full_name || 'there'}
+        </h1>
+        <p className="mt-0.5 text-sm text-gray-500">Nanny Dashboard</p>
       </div>
 
       {/* Connected Households */}
@@ -59,15 +52,13 @@ export function NannyDashboard() {
         </h2>
 
         {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-          </div>
+          <SkeletonDashboard />
         ) : households.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-            <p className="text-sm text-gray-500">
-              No households yet. Ask a parent to send you an invite link.
-            </p>
-          </div>
+          <EmptyState
+            icon={Home}
+            title="No households yet"
+            description="Ask a parent to send you an invite link to get connected."
+          />
         ) : (
           <div className="space-y-3">
             {households.map((h) => {

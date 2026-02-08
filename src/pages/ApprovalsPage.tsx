@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
 import {
   usePendingApprovals,
   approveTimeEntry,
@@ -23,6 +24,7 @@ import type { PendingTimeEntry, PendingExpense } from '../hooks/useApprovals'
 import { totalHoursFromPeriods, resolveRate, calculatePay } from '../lib/pay'
 import type { PayBreakdown } from '../lib/pay'
 import { RejectionModal } from '../components/RejectionModal'
+import { SkeletonList } from '../components/Skeleton'
 
 // ---------------------------------------------------------------------------
 // Tab type
@@ -36,6 +38,7 @@ type Tab = 'all' | 'hours' | 'expenses'
 
 export function ApprovalsPage() {
   const { user } = useAuth()
+  const { success: showSuccess } = useToast()
   const { timeEntries, expenses, loading, refresh } = usePendingApprovals(user?.id)
   const [tab, setTab] = useState<Tab>('all')
   const [selectedTE, setSelectedTE] = useState<Set<string>>(new Set())
@@ -135,6 +138,7 @@ export function ApprovalsPage() {
     setSelectedTE(new Set())
     setSelectedExp(new Set())
     setBatchLoading(false)
+    showSuccess(`Approved ${totalSelected} item${totalSelected > 1 ? 's' : ''}.`)
     refresh()
   }
 
@@ -142,12 +146,14 @@ export function ApprovalsPage() {
   const handleApproveTE = async (id: string) => {
     if (!user) return
     await approveTimeEntry(id, user.id)
+    showSuccess('Time entry approved.')
     refresh()
   }
 
   const handleApproveExp = async (id: string) => {
     if (!user) return
     await approveExpense(id, user.id)
+    showSuccess('Expense approved.')
     refresh()
   }
 
@@ -156,8 +162,10 @@ export function ApprovalsPage() {
     if (!rejecting || !user) return
     if (rejecting.type === 'time_entry') {
       await rejectTimeEntry(rejecting.id, comment, user.id)
+      showSuccess('Time entry rejected.')
     } else {
       await rejectExpense(rejecting.id, comment, user.id)
+      showSuccess('Expense rejected.')
     }
     setRejecting(null)
     refresh()
@@ -167,9 +175,7 @@ export function ApprovalsPage() {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Approvals</h1>
-        <div className="flex justify-center py-12">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-        </div>
+        <SkeletonList count={4} />
       </div>
     )
   }

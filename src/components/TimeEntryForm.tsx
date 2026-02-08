@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { Plus, Trash2, Clock, Save, Send } from 'lucide-react'
 import { format } from 'date-fns'
-import { timeToHours } from '../lib/pay'
-import type { NannyInstanceForSelector } from '../hooks/useTimeEntries'
+import { timeToHours, resolveRate } from '../lib/pay'
+import { useToast } from '../context/ToastContext'
+import type { NannyInstanceForSelector, TimeEntryWithPeriods } from '../hooks/useTimeEntries'
 import { createTimeEntry, updateTimeEntry, submitTimeEntry } from '../hooks/useTimeEntries'
-import { resolveRate } from '../lib/pay'
-import type { TimeEntryWithPeriods } from '../hooks/useTimeEntries'
 
 interface Period {
   start_time: string
@@ -46,6 +45,7 @@ export function TimeEntryForm({
   const [notes, setNotes] = useState(editEntry?.notes ?? '')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const { success: showSuccess, error: showError } = useToast()
 
   const selectedInstance = instances.find((i) => i.id === instanceId)
   const currentRate = selectedInstance
@@ -91,6 +91,7 @@ export function TimeEntryForm({
       })
       if (!ok) {
         setError('Failed to update entry.')
+        showError('Failed to update time entry.')
         setSubmitting(false)
         return
       }
@@ -108,12 +109,14 @@ export function TimeEntryForm({
       })
       if (!entry) {
         setError('Failed to create entry.')
+        showError('Failed to create time entry.')
         setSubmitting(false)
         return
       }
     }
 
     setSubmitting(false)
+    showSuccess(status === 'pending' ? 'Time entry submitted.' : 'Time entry saved as draft.')
     onSaved()
   }
 
@@ -268,7 +271,11 @@ export function TimeEntryForm({
           disabled={submitting || !instanceId || !date}
           className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
         >
-          <Save size={16} />
+          {submitting ? (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
+          ) : (
+            <Save size={16} />
+          )}
           {editEntry ? 'Update draft' : 'Save draft'}
         </button>
         <button
@@ -277,7 +284,11 @@ export function TimeEntryForm({
           disabled={submitting || !instanceId || !date}
           className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
         >
-          <Send size={16} />
+          {submitting ? (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+          ) : (
+            <Send size={16} />
+          )}
           Submit
         </button>
       </div>

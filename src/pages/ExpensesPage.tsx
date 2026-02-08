@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Receipt } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { SkeletonList } from '../components/Skeleton'
+import { EmptyState } from '../components/EmptyState'
 import {
   useNannyInstances,
   useHouseholdInstances,
@@ -56,9 +58,7 @@ export function ExpensesPage() {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold text-gray-900">Expenses</h1>
         {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-          </div>
+          <SkeletonList count={4} />
         ) : (
           <ExpenseList
             expenses={expenses}
@@ -94,11 +94,11 @@ export function ExpensesPage() {
       ) : (
         <>
           {instances.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-              <p className="text-sm text-gray-500">
-                No rate profiles yet. Ask a parent to set one up for you.
-              </p>
-            </div>
+            <EmptyState
+              icon={Receipt}
+              title="No expenses yet"
+              description="You need a rate profile before logging expenses. Ask a parent to set one up."
+            />
           ) : (
             <>
               {showForm && (

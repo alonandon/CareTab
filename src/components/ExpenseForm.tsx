@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Receipt, Save, Send } from 'lucide-react'
 import { format } from 'date-fns'
+import { useToast } from '../context/ToastContext'
 import type { NannyInstanceForSelector } from '../hooks/useTimeEntries'
 import type { Expense } from '../types'
 import { createExpense, updateExpense, submitExpense } from '../hooks/useExpenses'
@@ -34,6 +35,7 @@ export function ExpenseForm({
   const [description, setDescription] = useState(editExpense?.description ?? '')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const { success: showSuccess, error: showError } = useToast()
 
   const handleSave = async (status: 'draft' | 'pending') => {
     if (!instanceId || !date || !amount || !description.trim()) return
@@ -55,6 +57,7 @@ export function ExpenseForm({
       })
       if (!ok) {
         setError('Failed to update expense.')
+        showError('Failed to update expense.')
         setSubmitting(false)
         return
       }
@@ -72,12 +75,14 @@ export function ExpenseForm({
       })
       if (!expense) {
         setError('Failed to create expense.')
+        showError('Failed to create expense.')
         setSubmitting(false)
         return
       }
     }
 
     setSubmitting(false)
+    showSuccess(status === 'pending' ? 'Expense submitted.' : 'Expense saved as draft.')
     onSaved()
   }
 
@@ -186,7 +191,11 @@ export function ExpenseForm({
           disabled={submitting || !instanceId || !date || !amount || !description.trim()}
           className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
         >
-          <Save size={16} />
+          {submitting ? (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
+          ) : (
+            <Save size={16} />
+          )}
           {editExpense ? 'Update draft' : 'Save draft'}
         </button>
         <button
@@ -195,7 +204,11 @@ export function ExpenseForm({
           disabled={submitting || !instanceId || !date || !amount || !description.trim()}
           className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
         >
-          <Send size={16} />
+          {submitting ? (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+          ) : (
+            <Send size={16} />
+          )}
           Submit
         </button>
       </div>
