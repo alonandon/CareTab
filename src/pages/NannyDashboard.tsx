@@ -1,18 +1,20 @@
-import { useMemo } from 'react'
-import { Home } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Home, Mail, Loader2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholds, useNannyHouseholds } from '../hooks/useHousehold'
 import { useMultiBalance } from '../hooks/useBalance'
+import { usePendingInvites, acceptInvite, declineInvite } from '../hooks/usePendingInvites'
 import { BalanceInline } from '../components/BalanceCard'
 import { SkeletonDashboard } from '../components/Skeleton'
 import { EmptyState } from '../components/EmptyState'
 import type { Balance } from '../hooks/useBalance'
 
 export function NannyDashboard() {
-  const { profile } = useAuth()
-  const { households, loading } = useHouseholds()
+  const { user, profile } = useAuth()
+  const { households, loading, refresh: refreshHouseholds } = useHouseholds()
   const { instances } = useNannyHouseholds()
+  const { invites, refresh: refreshInvites } = usePendingInvites(profile?.email)
   const navigate = useNavigate()
 
   const instanceIds = useMemo(() => instances.map((i) => i.id), [instances])
@@ -45,6 +47,31 @@ export function NannyDashboard() {
         <p className="mt-0.5 text-sm text-gray-500">Nanny Dashboard</p>
       </div>
 
+      {/* Pending Invites */}
+      {invites.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+            Pending Invites
+          </h2>
+          <div className="space-y-3">
+            {invites.map((invite) => (
+              <InviteCard
+                key={invite.id}
+                inviteId={invite.id}
+                householdId={invite.household_id}
+                householdName={invite.households?.name ?? 'Unknown household'}
+                invitedBy={invite.profiles?.full_name || invite.profiles?.email || 'Someone'}
+                userId={user!.id}
+                onResponded={() => {
+                  refreshInvites()
+                  refreshHouseholds()
+                }}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Connected Households */}
       <section>
         <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
@@ -53,12 +80,14 @@ export function NannyDashboard() {
 
         {loading ? (
           <SkeletonDashboard />
-        ) : households.length === 0 ? (
+        ) : households.length === 0 && invites.length === 0 ? (
           <EmptyState
             icon={Home}
             title="No households yet"
-            description="Ask a parent to send you an invite link to get connected."
+            description="When a parent invites you, it will appear here."
           />
+        ) : households.length === 0 ? (
+          <p className="text-sm text-gray-400">No households yet. Accept an invite above to get started.</p>
         ) : (
           <div className="space-y-3">
             {households.map((h) => {
@@ -100,6 +129,93 @@ export function NannyDashboard() {
           </div>
         )}
       </section>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Invite Card
+// ---------------------------------------------------------------------------
+
+function InviteCard({
+  inviteId,
+  householdId,
+  householdName,
+  invitedBy,
+  userId,
+  onResponded,
+}: {
+  inviteId: string
+  householdId: string
+  householdName: string
+  invitedBy: string
+  userId: string
+  onResponded: () => void
+}) {
+  const [accepting, setAccepting] = useState(false)
+  const [declining, setDeclining] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleAccept = async () => {
+    setAccepting(true)
+    setError('')
+    const result = await acceptInvite(inviteId, householdId, userId)
+    if (result.error) {
+      setError(result.error)
+      setAccepting(false)
+      return
+    }
+    onResponded()
+  }
+
+  const handleDecline = async () => {
+    setDeclining(true)
+    setError('')
+    const result = await declineInvite(inviteId)
+    if (result.error) {
+      setError(result.error)
+      setDeclining(false)
+      return
+    }
+    onResponded()
+  }
+
+  return (
+    <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100">
+          <Mail size={16} className="text-blue-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-900">{householdName}</h3>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Invited by {invitedBy}
+          </p>
+        </div>
+      </div>
+
+      {error && (
+        <p className="mt-2 text-xs text-red-600">{error}</p>
+      )}
+
+      <div className="mt-3 flex gap-2">
+        <button
+          onClick={handleAccept}
+          disabled={accepting || declining}
+          className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-blue-500 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
+        >
+          {accepting ? <Loader2 size={14} className="animate-spin" /> : null}
+          {accepting ? 'Joining...' : 'Accept'}
+        </button>
+        <button
+          onClick={handleDecline}
+          disabled={accepting || declining}
+          className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+        >
+          {declining ? <Loader2 size={14} className="animate-spin" /> : null}
+          {declining ? 'Declining...' : 'Decline'}
+        </button>
+      </div>
     </div>
   )
 }

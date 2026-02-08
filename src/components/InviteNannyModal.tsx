@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Send, X, Copy, Check } from 'lucide-react'
+import { Send, X, CheckCircle } from 'lucide-react'
 import { inviteNanny } from '../hooks/useHousehold'
 import { useAuth } from '../context/AuthContext'
 
@@ -15,8 +15,7 @@ export function InviteNannyModal({ householdId, open, onClose, onInvited }: Prop
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [inviteLink, setInviteLink] = useState('')
-  const [copied, setCopied] = useState(false)
+  const [sent, setSent] = useState(false)
 
   if (!open) return null
 
@@ -34,23 +33,15 @@ export function InviteNannyModal({ householdId, open, onClose, onInvited }: Prop
       return
     }
 
-    const link = `${window.location.origin}/invite/${result.data.token}`
-    setInviteLink(link)
+    setSent(true)
     setSubmitting(false)
     onInvited()
   }
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(inviteLink)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
   const handleClose = () => {
     setEmail('')
-    setInviteLink('')
     setError('')
-    setCopied(false)
+    setSent(false)
     onClose()
   }
 
@@ -74,7 +65,7 @@ export function InviteNannyModal({ householdId, open, onClose, onInvited }: Prop
           <p className="mb-3 text-sm text-red-600">{error}</p>
         )}
 
-        {!inviteLink ? (
+        {!sent ? (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="invite-email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -89,6 +80,9 @@ export function InviteNannyModal({ householdId, open, onClose, onInvited }: Prop
                 className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 placeholder="nanny@example.com"
               />
+              <p className="mt-1.5 text-xs text-gray-400">
+                The nanny will see the invite on their CareTab dashboard when they sign in with this email.
+              </p>
             </div>
             <button
               type="submit"
@@ -96,23 +90,17 @@ export function InviteNannyModal({ householdId, open, onClose, onInvited }: Prop
               className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
             >
               <Send size={16} />
-              {submitting ? 'Creating invite...' : 'Create invite link'}
+              {submitting ? 'Sending...' : 'Send invite'}
             </button>
           </form>
         ) : (
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Share this link with your nanny. It expires in 7 days.
-            </p>
-            <div className="flex items-center gap-2 rounded-lg bg-gray-50 border border-gray-200 p-3">
-              <code className="flex-1 text-xs text-gray-700 break-all">{inviteLink}</code>
-              <button
-                onClick={handleCopy}
-                className="shrink-0 rounded-md bg-white border border-gray-200 p-2 text-gray-500 hover:text-blue-500 transition-colors"
-                aria-label="Copy link"
-              >
-                {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
-              </button>
+          <div className="space-y-4 text-center py-2">
+            <CheckCircle className="mx-auto h-10 w-10 text-green-500" />
+            <div>
+              <p className="text-sm font-medium text-gray-900">Invite sent!</p>
+              <p className="mt-1 text-xs text-gray-500">
+                When <strong>{email}</strong> signs into CareTab, they&apos;ll see your invite on their dashboard.
+              </p>
             </div>
             <button
               onClick={handleClose}
