@@ -1,14 +1,27 @@
 import { NavLink } from 'react-router-dom'
-import { Clock, DollarSign, Receipt, LayoutDashboard } from 'lucide-react'
+import { Clock, DollarSign, Receipt, LayoutDashboard, ClipboardCheck } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
-const navItems = [
+const nannyItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Home' },
   { to: '/hours', icon: Clock, label: 'Hours' },
   { to: '/expenses', icon: Receipt, label: 'Expenses' },
   { to: '/payments', icon: DollarSign, label: 'Payments' },
 ]
 
+const parentItems = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Home' },
+  { to: '/approvals', icon: ClipboardCheck, label: 'Approvals' },
+  { to: '/hours', icon: Clock, label: 'Hours' },
+  { to: '/expenses', icon: Receipt, label: 'Expenses' },
+  { to: '/payments', icon: DollarSign, label: 'Payments' },
+]
+
 export function BottomNav() {
+  const { profile } = useAuth()
+  const isParent = profile?.role === 'parent'
+  const navItems = isParent ? parentItems : nannyItems
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-[env(safe-area-inset-bottom)]">
       <div className="flex justify-around items-center h-16">
