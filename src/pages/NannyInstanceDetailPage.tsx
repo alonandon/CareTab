@@ -9,8 +9,11 @@ import { TimeEntryForm } from '../components/TimeEntryForm'
 import { TimeEntryList } from '../components/TimeEntryList'
 import { ExpenseForm } from '../components/ExpenseForm'
 import { ExpenseList } from '../components/ExpenseList'
+import { PaymentForm } from '../components/PaymentForm'
+import { PaymentList } from '../components/PaymentList'
 import { useTimeEntries } from '../hooks/useTimeEntries'
 import { useExpenses } from '../hooks/useExpenses'
+import { usePayments } from '../hooks/usePayments'
 import type { TimeEntryWithPeriods, NannyInstanceForSelector } from '../hooks/useTimeEntries'
 import type { NannyInstance, RateConfig, Profile, Household, Expense } from '../types'
 
@@ -30,6 +33,7 @@ export function NannyInstanceDetailPage() {
   const [editEntry, setEditEntry] = useState<TimeEntryWithPeriods | null>(null)
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const [editExpense, setEditExpense] = useState<Expense | null>(null)
+  const [showPaymentForm, setShowPaymentForm] = useState(false)
 
   const isParent = profile?.role === 'parent'
   const isNanny = profile?.role === 'nanny'
@@ -53,6 +57,7 @@ export function NannyInstanceDetailPage() {
 
   const { entries, loading: entriesLoading, refresh: refreshEntries } = useTimeEntries(id)
   const { expenses, loading: expensesLoading, refresh: refreshExpenses } = useExpenses(id)
+  const { payments, loading: paymentsLoading, refresh: refreshPayments } = usePayments(id)
 
   // Build a NannyInstanceForSelector for the form
   const instanceForForm: NannyInstanceForSelector | null = instance
@@ -224,6 +229,48 @@ export function NannyInstanceDetailPage() {
             expenses={expenses}
             onEdit={handleEditExpense}
             onRefresh={refreshExpenses}
+          />
+        )}
+      </section>
+
+      {/* Payments */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+            Payments
+          </h2>
+          {isParent && !showPaymentForm && (
+            <button
+              onClick={() => setShowPaymentForm(true)}
+              className="flex items-center gap-1 text-sm font-medium text-blue-500 hover:text-blue-600"
+            >
+              <Plus size={16} />
+              Log payment
+            </button>
+          )}
+        </div>
+
+        {isParent && showPaymentForm && instanceForForm && user && (
+          <div className="mb-4">
+            <PaymentForm
+              instances={[instanceForForm]}
+              userId={user.id}
+              defaultInstanceId={instance.id}
+              onSaved={() => { setShowPaymentForm(false); refreshPayments() }}
+              onCancel={() => setShowPaymentForm(false)}
+            />
+          </div>
+        )}
+
+        {paymentsLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+          </div>
+        ) : (
+          <PaymentList
+            payments={payments}
+            currentUserId={user!.id}
+            onRefresh={refreshPayments}
           />
         )}
       </section>
