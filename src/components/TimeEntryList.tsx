@@ -110,8 +110,11 @@ function EntryRow({ entry, rates, onEdit, onRefresh, showInstanceName }: EntryRo
           {entry.time_entry_periods.length > 0 && (
             <span className="text-sm text-gray-500">{hours.toFixed(1)}h</span>
           )}
-          {pay && entry.status === 'approved' && (
-            <span className="flex items-center gap-0.5 text-sm font-medium text-green-600">
+          {pay && (
+            <span className={`flex items-center gap-0.5 text-sm font-medium ${
+              entry.status === 'approved' ? 'text-green-600' :
+              entry.status === 'pending' ? 'text-amber-600' : 'text-gray-500'
+            }`}>
               <DollarSign size={14} />
               {pay.totalPay.toFixed(2)}
             </span>
@@ -148,24 +151,33 @@ function EntryRow({ entry, rates, onEdit, onRefresh, showInstanceName }: EntryRo
             <p className="text-xs text-blue-600">Weekly rate entry</p>
           )}
 
-          {/* Pay breakdown (approved) */}
-          {pay && entry.status === 'approved' && (
-            <div className="rounded-lg bg-green-50 p-2.5 space-y-1 text-xs">
+          {/* Pay breakdown */}
+          {pay && (
+            <div className={`rounded-lg p-2.5 space-y-1 text-xs ${
+              entry.status === 'approved' ? 'bg-green-50' :
+              entry.status === 'pending' ? 'bg-amber-50' : 'bg-gray-50'
+            }`}>
               {pay.regularHours > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Regular ({pay.regularHours}h)</span>
+                  <span className="text-gray-600">Regular ({pay.regularHours}h × ${rate!.rate_amount}/hr)</span>
                   <span className="font-medium text-gray-900">${pay.regularPay.toFixed(2)}</span>
                 </div>
               )}
               {pay.overtimeHours > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Overtime ({pay.overtimeHours}h)</span>
+                  <span className="text-gray-600">Overtime ({pay.overtimeHours}h × ${(rate!.rate_amount * (rate!.overtime_multiplier ?? 1)).toFixed(2)}/hr)</span>
                   <span className="font-medium text-gray-900">${pay.overtimePay.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between border-t border-green-200 pt-1">
+              <div className={`flex justify-between border-t pt-1 ${
+                entry.status === 'approved' ? 'border-green-200' :
+                entry.status === 'pending' ? 'border-amber-200' : 'border-gray-200'
+              }`}>
                 <span className="font-medium text-gray-700">Total</span>
-                <span className="font-semibold text-green-700">${pay.totalPay.toFixed(2)}</span>
+                <span className={`font-semibold ${
+                  entry.status === 'approved' ? 'text-green-700' :
+                  entry.status === 'pending' ? 'text-amber-700' : 'text-gray-700'
+                }`}>${pay.totalPay.toFixed(2)}</span>
               </div>
             </div>
           )}

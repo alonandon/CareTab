@@ -20,12 +20,24 @@ export function resolveRate(
   rates: RateConfig[],
   entryDate: string
 ): RateConfig | null {
-  return (
-    rates
-      .filter((r) => r.effective_date <= entryDate)
-      .sort((a, b) => b.effective_date.localeCompare(a.effective_date))[0] ??
-    null
+  if (rates.length === 0) return null
+
+  // Normalize dates to YYYY-MM-DD (in case full timestamps come through)
+  const normalizedDate = entryDate.slice(0, 10)
+
+  const matching = rates
+    .filter((r) => r.effective_date.slice(0, 10) <= normalizedDate)
+    .sort((a, b) => b.effective_date.localeCompare(a.effective_date))
+
+  if (matching.length > 0) return matching[0]
+
+  // Fallback: if no rate has effective_date <= entryDate, use the earliest
+  // available rate. This handles the edge case where a rate was created with
+  // an effective_date in the future relative to the entry.
+  const sorted = [...rates].sort((a, b) =>
+    a.effective_date.localeCompare(b.effective_date)
   )
+  return sorted[0]
 }
 
 // ---------------------------------------------------------------------------
@@ -57,13 +69,16 @@ export function calculateDailyPay(
   hours: number,
   rate: RateConfig
 ): PayBreakdown {
+  // Ensure rate_amount is a number (PostgREST may return decimal as string)
+  const rateAmount = Number(rate.rate_amount)
+
   if (rate.rate_type === 'weekly') {
     return {
       regularHours: hours,
       overtimeHours: 0,
-      regularPay: rate.rate_amount,
+      regularPay: rateAmount,
       overtimePay: 0,
-      totalPay: rate.rate_amount,
+      totalPay: rateAmount,
     }
   }
 
@@ -73,7 +88,7 @@ export function calculateDailyPay(
     !rate.overtime_trigger_hours ||
     !rate.overtime_multiplier
   ) {
-    const pay = round(hours * rate.rate_amount)
+    const pay = round(hours * rateAmount)
     return {
       regularHours: round(hours),
       overtimeHours: 0,
@@ -83,13 +98,12 @@ export function calculateDailyPay(
     }
   }
 
-  const threshold = rate.overtime_trigger_hours
+  const threshold = Number(rate.overtime_trigger_hours)
+  const multiplier = Number(rate.overtime_multiplier)
   const regularHours = Math.min(hours, threshold)
   const overtimeHours = Math.max(0, hours - threshold)
-  const regularPay = round(regularHours * rate.rate_amount)
-  const overtimePay = round(
-    overtimeHours * rate.rate_amount * rate.overtime_multiplier
-  )
+  const regularPay = round(regularHours * rateAmount)
+  const overtimePay = round(overtimeHours * rateAmount * multiplier)
 
   return {
     regularHours: round(regularHours),
@@ -113,14 +127,16 @@ export function calculateWeeklyPay(
   dailyHours: number[],
   rate: RateConfig
 ): PayBreakdown {
+  const rateAmount = Number(rate.rate_amount)
+
   if (rate.rate_type === 'weekly') {
     const totalHours = dailyHours.reduce((a, b) => a + b, 0)
     return {
       regularHours: round(totalHours),
       overtimeHours: 0,
-      regularPay: rate.rate_amount,
+      regularPay: rateAmount,
       overtimePay: 0,
-      totalPay: rate.rate_amount,
+      totalPay: rateAmount,
     }
   }
 
@@ -132,7 +148,7 @@ export function calculateWeeklyPay(
     !rate.overtime_trigger_hours ||
     !rate.overtime_multiplier
   ) {
-    const pay = round(totalHours * rate.rate_amount)
+    const pay = round(totalHours * rateAmount)
     return {
       regularHours: round(totalHours),
       overtimeHours: 0,
@@ -142,13 +158,12 @@ export function calculateWeeklyPay(
     }
   }
 
-  const threshold = rate.overtime_trigger_hours
+  const threshold = Number(rate.overtime_trigger_hours)
+  const multiplier = Number(rate.overtime_multiplier)
   const regularHours = Math.min(totalHours, threshold)
   const overtimeHours = Math.max(0, totalHours - threshold)
-  const regularPay = round(regularHours * rate.rate_amount)
-  const overtimePay = round(
-    overtimeHours * rate.rate_amount * rate.overtime_multiplier
-  )
+  const regularPay = round(regularHours * rateAmount)
+  const overtimePay = round(overtimeHours * rateAmount * multiplier)
 
   return {
     regularHours: round(regularHours),

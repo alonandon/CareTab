@@ -124,11 +124,19 @@ export function useBalance(nannyInstanceId: string | undefined) {
         .eq('nanny_instance_id', nannyInstanceId),
     ])
 
+    if (teResult.error) console.warn('[useBalance] time_entries error:', teResult.error)
+    if (expResult.error) console.warn('[useBalance] expenses error:', expResult.error)
+    if (payResult.error) console.warn('[useBalance] payments error:', payResult.error)
+    if (rateResult.error) console.warn('[useBalance] rate_configs error:', rateResult.error)
+
+    const rates = (rateResult.data as RateConfig[]) ?? []
+    const entries = (teResult.data as TimeEntryForCalc[]) ?? []
+
     const bal = calculateBalance(
-      (teResult.data as TimeEntryForCalc[]) ?? [],
+      entries,
       (expResult.data as ExpenseForCalc[]) ?? [],
       (payResult.data as PaymentForCalc[]) ?? [],
-      (rateResult.data as RateConfig[]) ?? []
+      rates
     )
 
     setBalance(bal)
@@ -191,6 +199,11 @@ export function useMultiBalance(instanceIds: string[]) {
     type ExpRow = ExpenseForCalc & { nanny_instance_id: string }
     type PayRow = PaymentForCalc & { nanny_instance_id: string }
 
+    if (teResult.error) console.warn('[useMultiBalance] time_entries error:', teResult.error)
+    if (expResult.error) console.warn('[useMultiBalance] expenses error:', expResult.error)
+    if (payResult.error) console.warn('[useMultiBalance] payments error:', payResult.error)
+    if (rateResult.error) console.warn('[useMultiBalance] rate_configs error:', rateResult.error)
+
     const teRows = (teResult.data as TERow[]) ?? []
     const expRows = (expResult.data as ExpRow[]) ?? []
     const payRows = (payResult.data as PayRow[]) ?? []
@@ -222,4 +235,113 @@ export function useMultiBalance(instanceIds: string[]) {
   }, [instanceIds.join(','), fetchAll]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return { balances, loading, refresh: fetchAll }
+}
+
+// ---------------------------------------------------------------------------
+// Hook: useHouseholdBalance (aggregate balance for an entire household)
+// Simpler alternative to useHouseholdDetail + useMultiBalance
+// ---------------------------------------------------------------------------
+
+export function useHouseholdBalance(householdId: string | undefined) {
+  const [balance, setBalance] = useState<Balance | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const fetchBalance = useCallback(async () => {
+    if (!householdId) {
+      setBalance(null)
+      setLoading(false)
+      return
+    }
+
+    // Get active nanny instance IDs for this household
+    const { data: instances, error: instError } = await supabase
+      .from('nanny_instances')
+      .select('id')
+      .eq('household_id', householdId)
+      .eq('is_active', true)
+
+    if (instError) {
+      console.warn('[useHouseholdBalance] nanny_instances error:', instError)
+      setBalance(null)
+      setLoading(false)
+      return
+    }
+
+    const ids = (instances ?? []).map((i) => i.id)
+    if (ids.length === 0) {
+      setBalance(null)
+      setLoading(false)
+      return
+    }
+
+    const [teResult, expResult, payResult, rateResult] = await Promise.all([
+      supabase
+        .from('time_entries')
+        .select('nanny_instance_id, date, status, time_entry_periods(start_time, end_time)')
+        .in('nanny_instance_id', ids)
+        .in('status', ['approved', 'pending']),
+      supabase
+        .from('expenses')
+        .select('nanny_instance_id, amount, status')
+        .in('nanny_instance_id', ids)
+        .in('status', ['approved', 'pending']),
+      supabase
+        .from('payments')
+        .select('nanny_instance_id, amount, status')
+        .in('nanny_instance_id', ids)
+        .eq('status', 'accepted'),
+      supabase
+        .from('rate_configs')
+        .select('*')
+        .in('nanny_instance_id', ids),
+    ])
+
+    if (teResult.error) console.warn('[useHouseholdBalance] time_entries error:', teResult.error)
+    if (expResult.error) console.warn('[useHouseholdBalance] expenses error:', expResult.error)
+    if (payResult.error) console.warn('[useHouseholdBalance] payments error:', payResult.error)
+    if (rateResult.error) console.warn('[useHouseholdBalance] rate_configs error:', rateResult.error)
+
+    type TERow = TimeEntryForCalc & { nanny_instance_id: string }
+    type ExpRow = ExpenseForCalc & { nanny_instance_id: string }
+    type PayRow = PaymentForCalc & { nanny_instance_id: string }
+
+    const teRows = (teResult.data as TERow[]) ?? []
+    const expRows = (expResult.data as ExpRow[]) ?? []
+    const payRows = (payResult.data as PayRow[]) ?? []
+    const rateRows = (rateResult.data as RateConfig[]) ?? []
+
+    const agg: Balance = { approvedOwed: 0, pendingApproval: 0, totalOwed: 0 }
+
+    for (const id of ids) {
+      const bal = calculateBalance(
+        teRows.filter((t) => t.nanny_instance_id === id),
+        expRows.filter((e) => e.nanny_instance_id === id),
+        payRows.filter((p) => p.nanny_instance_id === id),
+        rateRows.filter((r) => r.nanny_instance_id === id)
+      )
+      agg.approvedOwed += bal.approvedOwed
+      agg.pendingApproval += bal.pendingApproval
+      agg.totalOwed += bal.totalOwed
+    }
+
+    agg.approvedOwed = round(agg.approvedOwed)
+    agg.pendingApproval = round(agg.pendingApproval)
+    agg.totalOwed = round(agg.totalOwed)
+
+    setBalance(agg)
+    setLoading(false)
+  }, [householdId])
+
+  useEffect(() => {
+    fetchBalance()
+  }, [fetchBalance])
+
+  // Poll for updates every 30s
+  useEffect(() => {
+    if (!householdId) return
+    const id = setInterval(fetchBalance, 30_000)
+    return () => clearInterval(id)
+  }, [householdId, fetchBalance])
+
+  return { balance, loading, refresh: fetchBalance }
 }
