@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, UserPlus, Mail } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdDetail } from '../hooks/useHousehold'
+import { useMultiBalance } from '../hooks/useBalance'
 import { AddChildForm } from '../components/AddChildForm'
 import { InviteNannyModal } from '../components/InviteNannyModal'
 import { CreateNannyInstanceForm } from '../components/CreateNannyInstanceForm'
@@ -16,6 +17,12 @@ export function HouseholdDetailPage() {
   const [inviteOpen, setInviteOpen] = useState(false)
 
   const isParent = profile?.role === 'parent'
+
+  const activeInstanceIds = useMemo(
+    () => (household?.nanny_instances ?? []).filter((ni) => ni.is_active).map((ni) => ni.id),
+    [household]
+  )
+  const { balances, loading: balancesLoading } = useMultiBalance(activeInstanceIds)
 
   if (loading) {
     return (
@@ -155,7 +162,12 @@ export function HouseholdDetailPage() {
           {household.nanny_instances
             .filter((ni) => ni.is_active)
             .map((ni) => (
-              <NannyInstanceCard key={ni.id} instance={ni} />
+              <NannyInstanceCard
+                key={ni.id}
+                instance={ni}
+                balance={balances[ni.id]}
+                balanceLoading={balancesLoading}
+              />
             ))}
 
           {household.nanny_instances.filter((ni) => ni.is_active).length ===

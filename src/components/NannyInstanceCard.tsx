@@ -1,13 +1,17 @@
 import { useNavigate } from 'react-router-dom'
 import { Clock, ChevronRight, DollarSign } from 'lucide-react'
 import type { NannyInstanceWithDetails } from '../hooks/useHousehold'
+import type { Balance } from '../hooks/useBalance'
+import { BalanceInline } from './BalanceCard'
 
 interface Props {
   instance: NannyInstanceWithDetails
   showNannyName?: boolean
+  balance?: Balance
+  balanceLoading?: boolean
 }
 
-export function NannyInstanceCard({ instance, showNannyName = true }: Props) {
+export function NannyInstanceCard({ instance, showNannyName = true, balance, balanceLoading }: Props) {
   const navigate = useNavigate()
 
   const currentRate = instance.rate_configs
@@ -49,6 +53,8 @@ export function NannyInstanceCard({ instance, showNannyName = true }: Props) {
           )}
         </div>
       )}
+
+      {balance && <BalanceInline balance={balance} loading={balanceLoading} />}
     </button>
   )
 }

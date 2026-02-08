@@ -11,9 +11,11 @@ import { ExpenseForm } from '../components/ExpenseForm'
 import { ExpenseList } from '../components/ExpenseList'
 import { PaymentForm } from '../components/PaymentForm'
 import { PaymentList } from '../components/PaymentList'
+import { BalanceCard } from '../components/BalanceCard'
 import { useTimeEntries } from '../hooks/useTimeEntries'
 import { useExpenses } from '../hooks/useExpenses'
 import { usePayments } from '../hooks/usePayments'
+import { useBalance } from '../hooks/useBalance'
 import type { TimeEntryWithPeriods, NannyInstanceForSelector } from '../hooks/useTimeEntries'
 import type { NannyInstance, RateConfig, Profile, Household, Expense } from '../types'
 
@@ -58,6 +60,7 @@ export function NannyInstanceDetailPage() {
   const { entries, loading: entriesLoading, refresh: refreshEntries } = useTimeEntries(id)
   const { expenses, loading: expensesLoading, refresh: refreshExpenses } = useExpenses(id)
   const { payments, loading: paymentsLoading, refresh: refreshPayments } = usePayments(id)
+  const { balance, loading: balanceLoading } = useBalance(id)
 
   // Build a NannyInstanceForSelector for the form
   const instanceForForm: NannyInstanceForSelector | null = instance
@@ -127,6 +130,9 @@ export function NannyInstanceDetailPage() {
           {instance.profiles.full_name || instance.profiles.email}
         </p>
       </div>
+
+      {/* Balance */}
+      <BalanceCard balance={balance} loading={balanceLoading} />
 
       {/* Rate History */}
       <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">

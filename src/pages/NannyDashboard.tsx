@@ -1,12 +1,37 @@
+import { useMemo } from 'react'
 import { LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { useHouseholds } from '../hooks/useHousehold'
+import { useHouseholds, useNannyHouseholds } from '../hooks/useHousehold'
+import { useMultiBalance } from '../hooks/useBalance'
+import { BalanceInline } from '../components/BalanceCard'
+import type { Balance } from '../hooks/useBalance'
 
 export function NannyDashboard() {
   const { profile, signOut } = useAuth()
   const { households, loading } = useHouseholds()
+  const { instances } = useNannyHouseholds()
   const navigate = useNavigate()
+
+  const instanceIds = useMemo(() => instances.map((i) => i.id), [instances])
+  const { balances, loading: balancesLoading } = useMultiBalance(instanceIds)
+
+  // Aggregate balances per household
+  const householdBalances = useMemo(() => {
+    const map: Record<string, Balance> = {}
+    for (const inst of instances) {
+      const bal = balances[inst.id]
+      if (!bal) continue
+      const hid = inst.household_id
+      if (!map[hid]) {
+        map[hid] = { approvedOwed: 0, pendingApproval: 0, totalOwed: 0 }
+      }
+      map[hid].approvedOwed += bal.approvedOwed
+      map[hid].pendingApproval += bal.pendingApproval
+      map[hid].totalOwed += bal.totalOwed
+    }
+    return map
+  }, [instances, balances])
 
   return (
     <div className="space-y-6">
@@ -74,6 +99,9 @@ export function NannyDashboard() {
                         </span>
                       ))}
                     </div>
+                  )}
+                  {householdBalances[h.id] && (
+                    <BalanceInline balance={householdBalances[h.id]} loading={balancesLoading} />
                   )}
                 </button>
               )
