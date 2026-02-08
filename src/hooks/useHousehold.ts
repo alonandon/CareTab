@@ -171,7 +171,7 @@ export async function inviteNanny(
   householdId: string,
   email: string,
   invitedBy: string
-): Promise<Invitation | null> {
+): Promise<{ data: Invitation | null; error: string | null }> {
   const { data, error } = await supabase
     .from('invitations')
     .insert({
@@ -182,8 +182,8 @@ export async function inviteNanny(
     .select()
     .single()
 
-  if (error) return null
-  return data
+  if (error) return { data: null, error: error.message }
+  return { data, error: null }
 }
 
 export async function addChild(

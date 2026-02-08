@@ -27,14 +27,14 @@ export function InviteNannyModal({ householdId, open, onClose, onInvited }: Prop
     setError('')
     setSubmitting(true)
 
-    const invitation = await inviteNanny(householdId, email.trim(), user.id)
-    if (!invitation) {
-      setError('Failed to create invitation. Please try again.')
+    const result = await inviteNanny(householdId, email.trim(), user.id)
+    if (result.error || !result.data) {
+      setError(result.error ?? 'Failed to create invitation. Please try again.')
       setSubmitting(false)
       return
     }
 
-    const link = `${window.location.origin}/invite/${invitation.token}`
+    const link = `${window.location.origin}/invite/${result.data.token}`
     setInviteLink(link)
     setSubmitting(false)
     onInvited()
