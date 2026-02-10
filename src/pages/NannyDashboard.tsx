@@ -11,7 +11,6 @@ import type { PendingPayment } from '../hooks/usePayments'
 import { RejectionModal } from '../components/RejectionModal'
 import { SkeletonDashboard } from '../components/Skeleton'
 import { EmptyState } from '../components/EmptyState'
-import type { Balance } from '../hooks/useBalance'
 
 export function NannyDashboard() {
   const { user, profile } = useAuth()
@@ -21,7 +20,7 @@ export function NannyDashboard() {
   const navigate = useNavigate()
 
   const instanceIds = useMemo(() => instances.map((i) => i.id), [instances])
-  const { balances, loading: balancesLoading } = useMultiBalance(instanceIds)
+  const { balances } = useMultiBalance(instanceIds)
   const { payments: pendingPayments, refresh: refreshPayments } = usePendingPayments(instanceIds, user?.id)
 
   // Calculate grand total across all households

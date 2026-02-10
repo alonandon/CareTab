@@ -32,7 +32,6 @@ export function HouseholdDetailPage() {
   const instancesByNanny = useMemo(() => {
     const map: Record<string, { nanny: any; instances: any[]; balance: any }> = {}
     for (const inst of activeInstances) {
-      const nannyId = inst.nanny_id
       const nannyKey = inst.profiles.id
 
       if (!map[nannyKey]) {
