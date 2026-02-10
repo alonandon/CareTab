@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { DollarSign } from 'lucide-react'
 import { format } from 'date-fns'
 import { useToast } from '../context/ToastContext'
@@ -30,6 +30,18 @@ export function PaymentForm({
   onSaved,
   onCancel,
 }: Props) {
+  // Deduplicate instances by nanny_id so each nanny appears once in the dropdown.
+  // Use the first instance for each nanny as the payment target.
+  const nannyOptions = useMemo(() => {
+    const seen = new Map<string, NannyInstanceForSelector>()
+    for (const inst of instances) {
+      if (!seen.has(inst.nanny_id)) {
+        seen.set(inst.nanny_id, inst)
+      }
+    }
+    return Array.from(seen.values())
+  }, [instances])
+
   const [instanceId, setInstanceId] = useState(defaultInstanceId ?? '')
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [amount, setAmount] = useState('')
@@ -104,7 +116,7 @@ export function PaymentForm({
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="">Select a nanny</option>
-            {instances.map((inst) => (
+            {nannyOptions.map((inst) => (
               <option key={inst.id} value={inst.id}>
                 {inst.profiles?.full_name || inst.profiles?.email || inst.name} — {inst.households.name}
               </option>

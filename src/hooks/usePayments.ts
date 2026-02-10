@@ -139,3 +139,54 @@ export async function deletePayment(paymentId: string): Promise<boolean> {
     .eq('id', paymentId)
   return !error
 }
+
+// ---------------------------------------------------------------------------
+// Hook: usePendingPayments (logged payments awaiting nanny acceptance)
+// ---------------------------------------------------------------------------
+
+export interface PendingPayment extends Payment {
+  nanny_instances: {
+    id: string
+    name: string
+    household_id: string
+    households: { name: string }
+  }
+  profiles: { full_name: string; email: string }
+}
+
+export function usePendingPayments(instanceIds: string[], currentUserId: string | undefined) {
+  const [payments, setPayments] = useState<PendingPayment[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchPending = useCallback(async () => {
+    if (instanceIds.length === 0 || !currentUserId) {
+      setPayments([])
+      setLoading(false)
+      return
+    }
+
+    const { data } = await supabase
+      .from('payments')
+      .select('*, nanny_instances(id, name, household_id, households(name)), profiles:logged_by(full_name, email)')
+      .in('nanny_instance_id', instanceIds)
+      .eq('status', 'logged')
+      .neq('logged_by', currentUserId)
+      .order('created_at', { ascending: false })
+
+    setPayments((data as PendingPayment[]) ?? [])
+    setLoading(false)
+  }, [instanceIds.join(','), currentUserId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    fetchPending()
+  }, [fetchPending])
+
+  // Poll every 30s
+  useEffect(() => {
+    if (instanceIds.length === 0 || !currentUserId) return
+    const id = setInterval(fetchPending, 30_000)
+    return () => clearInterval(id)
+  }, [instanceIds.length, currentUserId, fetchPending])
+
+  return { payments, loading, refresh: fetchPending }
+}

@@ -1,11 +1,15 @@
 import { useMemo, useState } from 'react'
-import { Home, Mail, Loader2 } from 'lucide-react'
+import { Home, Mail, Loader2, DollarSign, CheckCircle, XCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { format, parseISO } from 'date-fns'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholds, useNannyHouseholds } from '../hooks/useHousehold'
 import { useMultiBalance } from '../hooks/useBalance'
 import { usePendingInvites, acceptInvite, declineInvite } from '../hooks/usePendingInvites'
+import { usePendingPayments, acceptPayment, disputePayment } from '../hooks/usePayments'
+import type { PendingPayment } from '../hooks/usePayments'
 import { BalanceInline } from '../components/BalanceCard'
+import { RejectionModal } from '../components/RejectionModal'
 import { SkeletonDashboard } from '../components/Skeleton'
 import { EmptyState } from '../components/EmptyState'
 import type { Balance } from '../hooks/useBalance'
@@ -19,6 +23,7 @@ export function NannyDashboard() {
 
   const instanceIds = useMemo(() => instances.map((i) => i.id), [instances])
   const { balances, loading: balancesLoading } = useMultiBalance(instanceIds)
+  const { payments: pendingPayments, refresh: refreshPayments } = usePendingPayments(instanceIds, user?.id)
 
   // Aggregate balances per household
   const householdBalances = useMemo(() => {
@@ -66,6 +71,25 @@ export function NannyDashboard() {
                   refreshInvites()
                   refreshHouseholds()
                 }}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Pending Payments */}
+      {pendingPayments.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+            Payments to Review
+          </h2>
+          <div className="space-y-3">
+            {pendingPayments.map((payment) => (
+              <PendingPaymentCard
+                key={payment.id}
+                payment={payment}
+                currentUserId={user!.id}
+                onResponded={refreshPayments}
               />
             ))}
           </div>
@@ -217,5 +241,109 @@ function InviteCard({
         </button>
       </div>
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Pending Payment Card
+// ---------------------------------------------------------------------------
+
+function PendingPaymentCard({
+  payment,
+  currentUserId,
+  onResponded,
+}: {
+  payment: PendingPayment
+  currentUserId: string
+  onResponded: () => void
+}) {
+  const [accepting, setAccepting] = useState(false)
+  const [showDisputeModal, setShowDisputeModal] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleAccept = async () => {
+    setAccepting(true)
+    setError('')
+    const ok = await acceptPayment(payment.id)
+    if (!ok) {
+      setError('Failed to accept payment.')
+      setAccepting(false)
+      return
+    }
+    onResponded()
+  }
+
+  const handleDispute = async (comment: string) => {
+    const ok = await disputePayment(payment.id, comment, currentUserId)
+    setShowDisputeModal(false)
+    if (!ok) {
+      setError('Failed to dispute payment.')
+      return
+    }
+    onResponded()
+  }
+
+  const methodLabel: Record<string, string> = {
+    cash: 'Cash', check: 'Check', venmo: 'Venmo',
+    zelle: 'Zelle', bank_transfer: 'Bank Transfer', other: 'Other',
+  }
+
+  return (
+    <>
+      <div className="rounded-xl border-2 border-green-200 bg-green-50 p-4 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-100">
+            <DollarSign size={16} className="text-green-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-gray-900">
+                ${Number(payment.amount).toFixed(2)}
+              </span>
+              <span className="text-xs text-gray-500">
+                via {methodLabel[payment.method ?? ''] ?? 'Unknown'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mt-0.5">
+              From {payment.profiles?.full_name || payment.profiles?.email || 'Parent'} — {payment.nanny_instances?.households?.name}
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {format(parseISO(payment.date), 'MMM d, yyyy')}
+            </p>
+          </div>
+        </div>
+
+        {error && (
+          <p className="mt-2 text-xs text-red-600">{error}</p>
+        )}
+
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={handleAccept}
+            disabled={accepting}
+            className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-green-500 px-3 py-2 text-sm font-semibold text-white hover:bg-green-600 disabled:opacity-50 transition-colors"
+          >
+            {accepting ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+            {accepting ? 'Accepting...' : 'Accept'}
+          </button>
+          <button
+            onClick={() => setShowDisputeModal(true)}
+            disabled={accepting}
+            className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 transition-colors"
+          >
+            <XCircle size={14} />
+            Dispute
+          </button>
+        </div>
+      </div>
+
+      {showDisputeModal && (
+        <RejectionModal
+          title="Dispute Payment"
+          onConfirm={handleDispute}
+          onClose={() => setShowDisputeModal(false)}
+        />
+      )}
+    </>
   )
 }
