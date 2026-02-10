@@ -176,11 +176,13 @@ export async function createTimeEntry(params: {
   notes: string | null
   periods: { start_time: string; end_time: string }[]
 }): Promise<TimeEntry | null> {
-  const { periods, ...entryData } = params
+  const { periods, status, ...rest } = params
 
+  // Always insert as draft first so time_entry_periods RLS allows the insert,
+  // then update to the desired status afterwards.
   const { data: entry, error } = await supabase
     .from('time_entries')
-    .insert(entryData)
+    .insert({ ...rest, status: 'draft' })
     .select()
     .single()
 
@@ -196,7 +198,15 @@ export async function createTimeEntry(params: {
     )
   }
 
-  return entry
+  // Now update to the intended status (e.g. 'pending' for direct submit)
+  if (status !== 'draft') {
+    await supabase
+      .from('time_entries')
+      .update({ status })
+      .eq('id', entry.id)
+  }
+
+  return { ...entry, status }
 }
 
 export async function updateTimeEntry(
