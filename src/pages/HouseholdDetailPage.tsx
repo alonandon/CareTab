@@ -18,11 +18,41 @@ export function HouseholdDetailPage() {
 
   const isParent = profile?.role === 'parent'
 
-  const activeInstanceIds = useMemo(
-    () => (household?.nanny_instances ?? []).filter((ni) => ni.is_active).map((ni) => ni.id),
+  const activeInstances = useMemo(
+    () => (household?.nanny_instances ?? []).filter((ni) => ni.is_active),
     [household]
   )
+  const activeInstanceIds = useMemo(
+    () => activeInstances.map((ni) => ni.id),
+    [activeInstances]
+  )
   const { balances, loading: balancesLoading } = useMultiBalance(activeInstanceIds)
+
+  // Group instances by nanny and calculate cumulative balances
+  const instancesByNanny = useMemo(() => {
+    const map: Record<string, { nanny: any; instances: any[]; balance: any }> = {}
+    for (const inst of activeInstances) {
+      const nannyKey = inst.profiles.id
+
+      if (!map[nannyKey]) {
+        map[nannyKey] = {
+          nanny: inst.profiles,
+          instances: [],
+          balance: { approvedOwed: 0, pendingApproval: 0, totalOwed: 0 },
+        }
+      }
+
+      map[nannyKey].instances.push(inst)
+
+      const instBalance = balances[inst.id]
+      if (instBalance) {
+        map[nannyKey].balance.approvedOwed += instBalance.approvedOwed
+        map[nannyKey].balance.pendingApproval += instBalance.pendingApproval
+        map[nannyKey].balance.totalOwed += instBalance.totalOwed
+      }
+    }
+    return Object.values(map)
+  }, [activeInstances, balances])
 
   if (loading) {
     return (
@@ -158,25 +188,48 @@ export function HouseholdDetailPage() {
           Rate Profiles
         </h2>
 
-        <div className="space-y-3">
-          {household.nanny_instances
-            .filter((ni) => ni.is_active)
-            .map((ni) => (
-              <NannyInstanceCard
-                key={ni.id}
-                instance={ni}
-                balance={balances[ni.id]}
-                balanceLoading={balancesLoading}
-              />
-            ))}
+        <div className="space-y-4">
+          {instancesByNanny.length > 0 ? (
+            instancesByNanny.map((nannyGroup) => (
+              <div key={nannyGroup.nanny.id} className="space-y-2">
+                {/* Nanny header with cumulative balance */}
+                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-900">
+                      {nannyGroup.nanny.full_name || nannyGroup.nanny.email}
+                    </h3>
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-gray-700">
+                        ${nannyGroup.balance.totalOwed.toFixed(2)}
+                      </div>
+                      {nannyGroup.balance.pendingApproval > 0 && (
+                        <div className="text-xs text-gray-500">
+                          +${nannyGroup.balance.pendingApproval.toFixed(2)} pending
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-          {household.nanny_instances.filter((ni) => ni.is_active).length ===
-            0 &&
-            !isParent && (
-              <p className="text-center text-sm text-gray-400 py-4">
-                No rate profiles yet. Ask the parent to set one up.
-              </p>
-            )}
+                {/* Rate profiles for this nanny */}
+                <div className="space-y-2 ml-2">
+                  {nannyGroup.instances.map((ni) => (
+                    <NannyInstanceCard
+                      key={ni.id}
+                      instance={ni}
+                      balance={balances[ni.id]}
+                      balanceLoading={balancesLoading}
+                      showNannyName={false}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : !isParent ? (
+            <p className="text-center text-sm text-gray-400 py-4">
+              No rate profiles yet. Ask the parent to set one up.
+            </p>
+          ) : null}
         </div>
 
         {isParent && nannyMembers.length > 0 && (

@@ -8,11 +8,9 @@ import { useMultiBalance } from '../hooks/useBalance'
 import { usePendingInvites, acceptInvite, declineInvite } from '../hooks/usePendingInvites'
 import { usePendingPayments, acceptPayment, disputePayment } from '../hooks/usePayments'
 import type { PendingPayment } from '../hooks/usePayments'
-import { BalanceInline } from '../components/BalanceCard'
 import { RejectionModal } from '../components/RejectionModal'
 import { SkeletonDashboard } from '../components/Skeleton'
 import { EmptyState } from '../components/EmptyState'
-import type { Balance } from '../hooks/useBalance'
 
 export function NannyDashboard() {
   const { user, profile } = useAuth()
@@ -22,24 +20,24 @@ export function NannyDashboard() {
   const navigate = useNavigate()
 
   const instanceIds = useMemo(() => instances.map((i) => i.id), [instances])
-  const { balances, loading: balancesLoading } = useMultiBalance(instanceIds)
+  const { balances } = useMultiBalance(instanceIds)
   const { payments: pendingPayments, refresh: refreshPayments } = usePendingPayments(instanceIds, user?.id)
 
-  // Aggregate balances per household
-  const householdBalances = useMemo(() => {
-    const map: Record<string, Balance> = {}
+  // Calculate grand total across all households
+  const grandTotal = useMemo(() => {
+    let approvedOwed = 0
+    let pendingApproval = 0
     for (const inst of instances) {
       const bal = balances[inst.id]
       if (!bal) continue
-      const hid = inst.household_id
-      if (!map[hid]) {
-        map[hid] = { approvedOwed: 0, pendingApproval: 0, totalOwed: 0 }
-      }
-      map[hid].approvedOwed += bal.approvedOwed
-      map[hid].pendingApproval += bal.pendingApproval
-      map[hid].totalOwed += bal.totalOwed
+      approvedOwed += bal.approvedOwed
+      pendingApproval += bal.pendingApproval
     }
-    return map
+    return {
+      approvedOwed,
+      pendingApproval,
+      totalOwed: approvedOwed + pendingApproval,
+    }
   }, [instances, balances])
 
   return (
@@ -96,6 +94,23 @@ export function NannyDashboard() {
         </section>
       )}
 
+      {/* Total Amount Owed */}
+      {!loading && households.length > 0 && (
+        <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <p className="text-sm text-gray-600">Total owed</p>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-gray-900">
+              ${grandTotal.totalOwed.toFixed(2)}
+            </span>
+            {grandTotal.pendingApproval > 0 && (
+              <span className="text-sm text-gray-500">
+                +${grandTotal.pendingApproval.toFixed(2)} pending
+              </span>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Connected Households */}
       <section>
         <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
@@ -143,9 +158,6 @@ export function NannyDashboard() {
                         </span>
                       ))}
                     </div>
-                  )}
-                  {householdBalances[h.id] && (
-                    <BalanceInline balance={householdBalances[h.id]} loading={balancesLoading} />
                   )}
                 </button>
               )
