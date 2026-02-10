@@ -32,7 +32,8 @@ export function PaymentsPage() {
   const instanceNames = useMemo(() => {
     const map: Record<string, string> = {}
     for (const inst of instances) {
-      map[inst.id] = `${inst.households.name} — ${inst.name}`
+      const nannyName = inst.profiles?.full_name || inst.profiles?.email || inst.name
+      map[inst.id] = `${nannyName} — ${inst.households.name}`
     }
     return map
   }, [instances])

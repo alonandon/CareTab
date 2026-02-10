@@ -50,7 +50,7 @@ export function PaymentForm({
     setError('')
     setSubmitting(true)
 
-    const payment = await logPayment({
+    const result = await logPayment({
       nanny_instance_id: instanceId,
       logged_by: userId,
       amount: parsedAmount,
@@ -58,9 +58,9 @@ export function PaymentForm({
       method,
     })
 
-    if (!payment) {
-      setError('Failed to log payment.')
-      showError('Failed to log payment.')
+    if (result.error || !result.data) {
+      setError(result.error || 'Failed to log payment.')
+      showError(result.error || 'Failed to log payment.')
       setSubmitting(false)
       return
     }
@@ -106,7 +106,7 @@ export function PaymentForm({
             <option value="">Select a nanny</option>
             {instances.map((inst) => (
               <option key={inst.id} value={inst.id}>
-                {inst.households.name} — {inst.name}
+                {inst.profiles?.full_name || inst.profiles?.email || inst.name} — {inst.households.name}
               </option>
             ))}
           </select>

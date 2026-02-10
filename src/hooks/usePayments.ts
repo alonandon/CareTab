@@ -85,15 +85,18 @@ export async function logPayment(params: {
   amount: number
   date: string
   method: Payment['method']
-}): Promise<Payment | null> {
+}): Promise<{ data: Payment | null; error: string | null }> {
   const { data, error } = await supabase
     .from('payments')
     .insert({ ...params, status: 'logged' })
     .select()
     .single()
 
-  if (error || !data) return null
-  return data as Payment
+  if (error) {
+    console.warn('[logPayment] error:', error)
+    return { data: null, error: error.message }
+  }
+  return { data: data as Payment, error: null }
 }
 
 export async function acceptPayment(paymentId: string): Promise<boolean> {

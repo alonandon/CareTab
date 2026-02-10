@@ -60,7 +60,7 @@ export function NannyInstanceDetailPage() {
   const { entries, loading: entriesLoading, refresh: refreshEntries } = useTimeEntries(id)
   const { expenses, loading: expensesLoading, refresh: refreshExpenses } = useExpenses(id)
   const { payments, loading: paymentsLoading, refresh: refreshPayments } = usePayments(id)
-  const { balance, loading: balanceLoading } = useBalance(id)
+  const { balance, loading: balanceLoading, refresh: refreshBalance } = useBalance(id)
 
   // Build a NannyInstanceForSelector for the form
   const instanceForForm: NannyInstanceForSelector | null = instance
@@ -101,6 +101,7 @@ export function NannyInstanceDetailPage() {
     setShowTimeForm(false)
     setEditEntry(null)
     refreshEntries()
+    refreshBalance()
   }
 
   const handleEditExpense = (expense: Expense) => {
@@ -112,6 +113,7 @@ export function NannyInstanceDetailPage() {
     setShowExpenseForm(false)
     setEditExpense(null)
     refreshExpenses()
+    refreshBalance()
   }
 
   return (
@@ -262,7 +264,7 @@ export function NannyInstanceDetailPage() {
               instances={[instanceForForm]}
               userId={user.id}
               defaultInstanceId={instance.id}
-              onSaved={() => { setShowPaymentForm(false); refreshPayments() }}
+              onSaved={() => { setShowPaymentForm(false); refreshPayments(); refreshBalance() }}
               onCancel={() => setShowPaymentForm(false)}
             />
           </div>

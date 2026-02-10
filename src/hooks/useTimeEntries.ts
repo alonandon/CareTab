@@ -18,6 +18,7 @@ export interface TimeEntryWithPeriods extends TimeEntry {
 export interface NannyInstanceForSelector extends NannyInstance {
   rate_configs: RateConfig[]
   households: { id: string; name: string }
+  profiles?: { full_name: string; email: string }
 }
 
 // ---------------------------------------------------------------------------
@@ -107,7 +108,7 @@ export function useNannyInstances(userId: string | undefined) {
     async function fetch() {
       const { data } = await supabase
         .from('nanny_instances')
-        .select('*, rate_configs(*), households(id, name)')
+        .select('*, rate_configs(*), households(id, name), profiles:nanny_id(full_name, email)')
         .eq('nanny_id', userId)
         .eq('is_active', true)
 
@@ -150,7 +151,7 @@ export function useHouseholdInstances(userId: string | undefined) {
 
       const { data } = await supabase
         .from('nanny_instances')
-        .select('*, rate_configs(*), households(id, name)')
+        .select('*, rate_configs(*), households(id, name), profiles:nanny_id(full_name, email)')
         .in('household_id', ids)
         .eq('is_active', true)
 
