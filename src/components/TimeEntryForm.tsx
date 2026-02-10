@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Plus, Trash2, Clock, Save, Send } from 'lucide-react'
 import { format } from 'date-fns'
 import { timeToHours, resolveRate } from '../lib/pay'
@@ -30,20 +30,7 @@ export function TimeEntryForm({
   onSaved,
   onCancel,
 }: Props) {
-  // Deduplicate instances by household so each household appears once
-  const householdOptions = useMemo(() => {
-    const seen = new Map<string, NannyInstanceForSelector>()
-    for (const inst of instances) {
-      if (!seen.has(inst.household_id)) {
-        seen.set(inst.household_id, inst)
-      }
-    }
-    return Array.from(seen.values())
-  }, [instances])
-
-  // Auto-select if there's only one option or a default is provided
-  const autoId = defaultInstanceId ?? (householdOptions.length === 1 ? householdOptions[0].id : '')
-  const showSelector = !defaultInstanceId && householdOptions.length > 1
+  const autoId = defaultInstanceId ?? (instances.length === 1 ? instances[0].id : '')
 
   const [instanceId, setInstanceId] = useState(
     editEntry?.nanny_instance_id ?? autoId
@@ -157,11 +144,11 @@ export function TimeEntryForm({
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {/* Household selector (only when nanny has multiple households) */}
-      {showSelector && (
+      {/* Rate profile selector */}
+      {!defaultInstanceId && instances.length > 1 && (
         <div>
           <label htmlFor="te-instance" className="block text-sm font-medium text-gray-700 mb-1">
-            Household
+            Rate profile
           </label>
           <select
             id="te-instance"
@@ -170,10 +157,10 @@ export function TimeEntryForm({
             required
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
-            <option value="">Select a household</option>
-            {householdOptions.map((inst) => (
+            <option value="">Select a rate profile</option>
+            {instances.map((inst) => (
               <option key={inst.id} value={inst.id}>
-                {inst.households.name}
+                {inst.households.name} — {inst.name}
               </option>
             ))}
           </select>
