@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   FileText,
   UserCircle,
+  Calendar,
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { usePendingCount } from '../hooks/usePendingCount'
@@ -20,6 +21,7 @@ interface NavItem {
 
 const nannyItems: Omit<NavItem, 'badge'>[] = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Home' },
+  { to: '/calendar', icon: Calendar, label: 'Calendar' },
   { to: '/hours', icon: Clock, label: 'Hours' },
   { to: '/expenses', icon: Receipt, label: 'Expenses' },
   { to: '/payments', icon: DollarSign, label: 'Payments' },
@@ -37,6 +39,7 @@ function useNavItems(): NavItem[] {
 
   return [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Home' },
+    { to: '/calendar', icon: Calendar, label: 'Calendar' },
     { to: '/approvals', icon: ClipboardCheck, label: 'Approvals', badge: pendingCount || undefined },
     { to: '/payments', icon: DollarSign, label: 'Payments' },
     { to: '/history', icon: FileText, label: 'History' },
