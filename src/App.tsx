@@ -12,6 +12,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { HouseholdDetailPage } from './pages/HouseholdDetailPage'
 import { NannyInstanceDetailPage } from './pages/NannyInstanceDetailPage'
 import { HoursPage } from './pages/HoursPage'
+import { CalendarPage } from './pages/CalendarPage'
 import { ExpensesPage } from './pages/ExpensesPage'
 import { PaymentsPage } from './pages/PaymentsPage'
 import { ApprovalsPage } from './pages/ApprovalsPage'
@@ -41,6 +42,7 @@ function App() {
               <Route path="/household/:id" element={<HouseholdDetailPage />} />
               <Route path="/nanny-instance/:id" element={<NannyInstanceDetailPage />} />
               <Route path="/approvals" element={<ApprovalsPage />} />
+              <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/hours" element={<HoursPage />} />
               <Route path="/expenses" element={<ExpensesPage />} />
               <Route path="/payments" element={<PaymentsPage />} />

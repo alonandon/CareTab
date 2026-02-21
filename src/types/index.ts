@@ -63,11 +63,51 @@ export interface RateConfig {
   created_at: string
 }
 
+export interface Shift {
+  id: string
+  nanny_instance_id: string
+  date: string
+  start_time: string
+  end_time: string
+  notes: string | null
+  rate_override: number | null
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+export interface RecurringShift {
+  id: string
+  nanny_instance_id: string
+  recurrence_type: 'daily' | 'weekly' | 'biweekly'
+  day_of_week: number | null
+  start_time: string
+  end_time: string
+  notes: string | null
+  rate_override: number | null
+  start_date: string
+  end_date: string | null
+  created_by: string
+  created_at: string
+  updated_at: string
+  is_active: boolean
+}
+
+export interface BlackoutDate {
+  id: string
+  nanny_instance_id: string
+  date: string
+  reason: string | null
+  created_by: string
+  created_at: string
+}
+
 export interface TimeEntry {
   id: string
   nanny_instance_id: string
   entered_by: string
   date: string
+  shift_id: string | null
   status: 'draft' | 'pending' | 'approved' | 'rejected'
   notes: string | null
   rejection_comment: string | null
