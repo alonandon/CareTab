@@ -1,4 +1,4 @@
-import { format, isAfter, isBefore, isSameDay, parse } from 'date-fns'
+import { format, isAfter, isBefore, parse } from 'date-fns'
 import type { Shift, RecurringShift } from '../types'
 
 // ---------------------------------------------------------------------------

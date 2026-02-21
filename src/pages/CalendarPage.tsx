@@ -5,9 +5,6 @@ import { useHouseholdInstances } from '../hooks/useTimeEntries'
 import { useNannyHouseholds } from '../hooks/useHousehold'
 import {
   useAllShifts,
-  useShifts,
-  useRecurringShifts,
-  useBlackoutDates,
 } from '../hooks/useShifts'
 import { CalendarGrid } from '../components/CalendarGrid'
 import { ShiftList } from '../components/ShiftList'

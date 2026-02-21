@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { X, Save } from 'lucide-react'
 import type { NannyInstanceForSelector } from '../hooks/useTimeEntries'
 import type { Shift, RecurringShift } from '../types'
@@ -111,12 +111,13 @@ export function ShiftModal({
       setSubmitting(true)
 
       if (editShift) {
+        const rateValue: number | null = rateOverride ? parseFloat(rateOverride) : null
         const result = await updateShift(editShift.id, {
           date,
           start_time: startTime,
           end_time: endTime,
           notes: notes || null,
-          rate_override: rateOverride ? parseFloat(rateOverride) : null,
+          rate_override: rateValue,
           nanny_instance_id: instanceId,
         })
 
@@ -127,13 +128,14 @@ export function ShiftModal({
           return
         }
       } else {
+        const rateValue: number | null = rateOverride ? parseFloat(rateOverride) : null
         const result = await createShift({
           nanny_instance_id: instanceId,
           date,
           start_time: startTime,
           end_time: endTime,
           notes: notes || null,
-          rate_override: rateOverride ? parseFloat(rateOverride) : null,
+          rate_override: rateValue,
           created_by: userId,
         })
 
@@ -158,14 +160,17 @@ export function ShiftModal({
 
       setSubmitting(true)
 
+      const rateValue: number | null = rateOverride ? parseFloat(rateOverride) : null
+      const dayValue: number | null = recurrenceType === 'daily' ? null : parseInt(dayOfWeek, 10)
+
       if (editRecurringShift) {
         const result = await updateRecurringShift(editRecurringShift.id, {
           recurrence_type: recurrenceType,
-          day_of_week: recurrenceType === 'daily' ? null : parseInt(dayOfWeek, 10),
+          day_of_week: dayValue,
           start_time: startTime,
           end_time: endTime,
           notes: notes || null,
-          rate_override: rateOverride ? parseFloat(rateOverride) : null,
+          rate_override: rateValue,
           start_date: startDate,
           end_date: endDate || null,
           nanny_instance_id: instanceId,
@@ -181,11 +186,11 @@ export function ShiftModal({
         const result = await createRecurringShift({
           nanny_instance_id: instanceId,
           recurrence_type: recurrenceType,
-          day_of_week: recurrenceType === 'daily' ? null : parseInt(dayOfWeek, 10),
+          day_of_week: dayValue,
           start_time: startTime,
           end_time: endTime,
           notes: notes || null,
-          rate_override: rateOverride ? parseFloat(rateOverride) : null,
+          rate_override: rateValue,
           start_date: startDate,
           end_date: endDate || null,
           created_by: userId,

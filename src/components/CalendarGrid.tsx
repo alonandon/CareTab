@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 import { format, addMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns'
 import type { Shift } from '../types'
-import { formatShiftDate, groupShiftsByDate, formatShiftTimeRange } from '../lib/shifts'
+import { groupShiftsByDate, formatShiftTimeRange } from '../lib/shifts'
 
 interface Props {
   shifts: Shift[]
@@ -62,7 +62,7 @@ export function CalendarGrid({
     }
   }
 
-  const getShiftStatusColor = (shift: Shift, dateStr: string): string => {
+  const getShiftStatusColor = (_shift: Shift, dateStr: string): string => {
     const shiftDate = new Date(dateStr)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
