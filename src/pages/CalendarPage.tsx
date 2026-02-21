@@ -231,7 +231,7 @@ export function CalendarPage() {
                         </div>
                       </div>
                     )
-                  })}
+                  ))}
               </div>
             </div>
           )}
