@@ -57,8 +57,8 @@ export function ShiftModal({
       '17:00'
   )
   const [notes, setNotes] = useState(editShift?.notes || editRecurringShift?.notes || '')
-  const [rateOverride, setRateOverride] = useState(
-    editShift?.rate_override || editRecurringShift?.rate_override || ''
+  const [rateOverride, setRateOverride] = useState<string>(
+    (editShift?.rate_override ?? editRecurringShift?.rate_override)?.toString() || ''
   )
 
   // One-off shift fields
