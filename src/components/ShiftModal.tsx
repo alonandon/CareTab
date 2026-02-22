@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Save } from 'lucide-react'
+import { X, Save, Trash2 } from 'lucide-react'
 import type { NannyInstanceForSelector } from '../hooks/useTimeEntries'
 import type { Shift, RecurringShift } from '../types'
 import { isValidTimeRange, isValidDate, isFutureDate } from '../lib/shifts'
@@ -9,6 +9,7 @@ import {
   updateShift,
   createRecurringShift,
   updateRecurringShift,
+  deleteShift,
 } from '../hooks/useShifts'
 
 interface Props {
@@ -16,6 +17,7 @@ interface Props {
   userId: string
   editShift?: Shift
   editRecurringShift?: RecurringShift
+  defaultDate?: string
   onClose: () => void
   onSaved: () => void
 }
@@ -27,6 +29,7 @@ export function ShiftModal({
   userId,
   editShift,
   editRecurringShift,
+  defaultDate,
   onClose,
   onSaved,
 }: Props) {
@@ -62,7 +65,7 @@ export function ShiftModal({
   )
 
   // One-off shift fields
-  const [date, setDate] = useState(editShift?.date || '')
+  const [date, setDate] = useState(editShift?.date || defaultDate || '')
 
   // Recurring shift fields
   const [recurrenceType, setRecurrenceType] = useState<'daily' | 'weekly' | 'biweekly'>(
@@ -75,6 +78,20 @@ export function ShiftModal({
   const [endDate, setEndDate] = useState(editRecurringShift?.end_date || '')
 
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+  const handleDelete = async () => {
+    if (!editShift) return
+    if (!window.confirm('Are you sure you want to delete this shift?')) return
+
+    const success = await deleteShift(editShift.id)
+    if (success) {
+      showSuccess('Shift deleted.')
+      onClose()
+      onSaved()
+    } else {
+      showError('Failed to delete shift.')
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -258,6 +275,27 @@ export function ShiftModal({
             </div>
           )}
 
+          {/* Current Rate Display */}
+          {instanceId && instances.find((i) => i.id === instanceId)?.rate_configs && (
+            <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+              <p className="text-xs text-blue-600 font-medium mb-1">Current Rate</p>
+              {instances
+                .find((i) => i.id === instanceId)
+                ?.rate_configs?.map((rc) => (
+                  <div key={rc.id} className="text-sm text-blue-900">
+                    {rc.rate_type === 'hourly'
+                      ? `$${rc.rate_amount}/hour`
+                      : `$${rc.rate_amount}/week`}
+                    {rc.overtime_enabled && (
+                      <span className="ml-2 text-xs">
+                        (Overtime: {rc.overtime_multiplier}x after {rc.overtime_trigger_hours}h)
+                      </span>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
+
           {/* Shift Type Toggle (only if creating new) */}
           {!editShift && !editRecurringShift && (
             <div>
@@ -438,6 +476,16 @@ export function ShiftModal({
 
           {/* Buttons */}
           <div className="flex gap-2 pt-4 border-t border-gray-200">
+            {editShift && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="px-3 py-2 rounded-lg bg-red-100 text-red-700 font-medium text-sm hover:bg-red-200 transition-colors flex items-center justify-center gap-2"
+              >
+                <Trash2 size={16} />
+                Delete
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}

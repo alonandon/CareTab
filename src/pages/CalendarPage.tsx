@@ -33,20 +33,30 @@ export function CalendarPage() {
   const [showModal, setShowModal] = useState(false)
   const [editShift, setEditShift] = useState<Shift | null>(null)
   const [selectedShiftForConfirm, setSelectedShiftForConfirm] = useState<Shift | null>(null)
+  const [selectedDateForNewShift, setSelectedDateForNewShift] = useState<string | null>(null)
 
   const handleEditShift = (shift: Shift) => {
     setEditShift(shift)
+    setSelectedDateForNewShift(null)
     setShowModal(true)
   }
 
   const handleNewShift = () => {
     setEditShift(null)
+    setSelectedDateForNewShift(null)
+    setShowModal(true)
+  }
+
+  const handleDateClick = (dateStr: string) => {
+    setEditShift(null)
+    setSelectedDateForNewShift(dateStr)
     setShowModal(true)
   }
 
   const handleModalClose = () => {
     setShowModal(false)
     setEditShift(null)
+    setSelectedDateForNewShift(null)
   }
 
   const handleModalSaved = () => {
@@ -125,6 +135,7 @@ export function CalendarPage() {
               <CalendarGrid
                 shifts={shifts}
                 onShiftClick={handleEditShift}
+                onDateClick={handleDateClick}
                 loading={loading}
               />
             ) : (
@@ -133,6 +144,7 @@ export function CalendarPage() {
                 loading={loading}
                 onEdit={handleEditShift}
                 onDelete={refreshShifts}
+                showActions={true}
               />
             )}
           </>
@@ -143,6 +155,7 @@ export function CalendarPage() {
             instances={parentInstances}
             userId={user?.id ?? ''}
             editShift={editShift ?? undefined}
+            defaultDate={selectedDateForNewShift ?? undefined}
             onClose={handleModalClose}
             onSaved={handleModalSaved}
           />
