@@ -253,32 +253,30 @@ export function ShiftModal({
             </div>
           )}
 
-          {/* Nanny Instance */}
-          {instances.length > 1 && (
-            <div>
-              <label htmlFor="instance" className="block text-sm font-medium text-gray-700 mb-1">
-                Nanny Instance
-              </label>
-              <select
-                id="instance"
-                value={instanceId}
-                onChange={(e) => setInstanceId(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="">Select an instance</option>
-                {instances.map((inst) => (
-                  <option key={inst.id} value={inst.id}>
-                    {inst.households.name} — {inst.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+          {/* Step 1: Nanny Selection */}
+          <div>
+            <label htmlFor="instance" className="block text-sm font-medium text-gray-700 mb-1">
+              Nanny
+            </label>
+            <select
+              id="instance"
+              value={instanceId}
+              onChange={(e) => setInstanceId(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">Select a nanny</option>
+              {instances.map((inst) => (
+                <option key={inst.id} value={inst.id}>
+                  {inst.households.name} — {inst.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-          {/* Current Rate Display */}
+          {/* Step 2: Current Rate Profile Display */}
           {instanceId && instances.find((i) => i.id === instanceId)?.rate_configs && (
             <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-              <p className="text-xs text-blue-600 font-medium mb-1">Current Rate</p>
+              <p className="text-xs text-blue-600 font-medium mb-2">Rate Profile</p>
               {instances
                 .find((i) => i.id === instanceId)
                 ?.rate_configs?.map((rc) => (
@@ -296,183 +294,188 @@ export function ShiftModal({
             </div>
           )}
 
-          {/* Shift Type Toggle (only if creating new) */}
-          {!editShift && !editRecurringShift && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Shift Type
-              </label>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShiftType('one-off')}
-                  className={`flex-1 py-2 rounded-lg font-medium text-sm transition-colors ${
-                    shiftType === 'one-off'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  One-off
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShiftType('recurring')}
-                  className={`flex-1 py-2 rounded-lg font-medium text-sm transition-colors ${
-                    shiftType === 'recurring'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  Recurring
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* One-off shift fields */}
-          {shiftType === 'one-off' && (
+          {/* Step 3: Schedule Details */}
+          {instanceId && (
             <>
-              <div>
-                <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
-                  Date
-                </label>
-                <input
-                  id="date"
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-            </>
-          )}
-
-          {/* Recurring shift fields */}
-          {shiftType === 'recurring' && (
-            <>
-              <div>
-                <label htmlFor="recurrence" className="block text-sm font-medium text-gray-700 mb-1">
-                  Recurrence
-                </label>
-                <select
-                  id="recurrence"
-                  value={recurrenceType}
-                  onChange={(e) => setRecurrenceType(e.target.value as any)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="daily">Every day</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="biweekly">Bi-weekly</option>
-                </select>
-              </div>
-
-              {recurrenceType !== 'daily' && (
+              {/* Shift Type Toggle (only if creating new) */}
+              {!editShift && !editRecurringShift && (
                 <div>
-                  <label htmlFor="dayOfWeek" className="block text-sm font-medium text-gray-700 mb-1">
-                    Day of Week
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Shift Type
                   </label>
-                  <select
-                    id="dayOfWeek"
-                    value={dayOfWeek}
-                    onChange={(e) => setDayOfWeek(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    {dayNames.map((day, idx) => (
-                      <option key={idx} value={idx}>
-                        {day}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShiftType('one-off')}
+                      className={`flex-1 py-2 rounded-lg font-medium text-sm transition-colors ${
+                        shiftType === 'one-off'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      One-off
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShiftType('recurring')}
+                      className={`flex-1 py-2 rounded-lg font-medium text-sm transition-colors ${
+                        shiftType === 'recurring'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Recurring
+                    </button>
+                  </div>
                 </div>
               )}
 
+              {/* One-off shift fields */}
+              {shiftType === 'one-off' && (
+                <>
+                  <div>
+                    <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
+                      Date
+                    </label>
+                    <input
+                      id="date"
+                      type="date"
+                      value={date}
+                      onChange={(e) => setDate(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Recurring shift fields */}
+              {shiftType === 'recurring' && (
+                <>
+                  <div>
+                    <label htmlFor="recurrence" className="block text-sm font-medium text-gray-700 mb-1">
+                      Recurrence
+                    </label>
+                    <select
+                      id="recurrence"
+                      value={recurrenceType}
+                      onChange={(e) => setRecurrenceType(e.target.value as any)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="daily">Every day</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="biweekly">Bi-weekly</option>
+                    </select>
+                  </div>
+
+                  {recurrenceType !== 'daily' && (
+                    <div>
+                      <label htmlFor="dayOfWeek" className="block text-sm font-medium text-gray-700 mb-1">
+                        Day of Week
+                      </label>
+                      <select
+                        id="dayOfWeek"
+                        value={dayOfWeek}
+                        onChange={(e) => setDayOfWeek(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      >
+                        {dayNames.map((day, idx) => (
+                          <option key={idx} value={idx}>
+                            {day}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div>
+                    <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
+                      Start Date
+                    </label>
+                    <input
+                      id="startDate"
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
+                      End Date (optional)
+                    </label>
+                    <input
+                      id="endDate"
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Time Range (both types) */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">
+                    Start Time
+                  </label>
+                  <input
+                    id="startTime"
+                    type="time"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">
+                    End Time
+                  </label>
+                  <input
+                    id="endTime"
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Rate Override */}
               <div>
-                <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
-                  Start Date
+                <label htmlFor="rateOverride" className="block text-sm font-medium text-gray-700 mb-1">
+                  Rate Override (optional)
                 </label>
                 <input
-                  id="startDate"
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  id="rateOverride"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={rateOverride}
+                  onChange={(e) => setRateOverride(e.target.value)}
+                  placeholder="Leave blank to use default rate"
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
 
+              {/* Notes */}
               <div>
-                <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
-                  End Date (optional)
+                <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                  Notes (optional)
                 </label>
-                <input
-                  id="endDate"
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                <textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Add any notes about this shift..."
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  rows={3}
                 />
               </div>
             </>
           )}
-
-          {/* Time Range (both types) */}
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">
-                Start Time
-              </label>
-              <input
-                id="startTime"
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">
-                End Time
-              </label>
-              <input
-                id="endTime"
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Rate Override */}
-          <div>
-            <label htmlFor="rateOverride" className="block text-sm font-medium text-gray-700 mb-1">
-              Rate Override (optional)
-            </label>
-            <input
-              id="rateOverride"
-              type="number"
-              step="0.01"
-              min="0"
-              value={rateOverride}
-              onChange={(e) => setRateOverride(e.target.value)}
-              placeholder="Leave blank to use default rate"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-              Notes (optional)
-            </label>
-            <textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any notes about this shift..."
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              rows={3}
-            />
-          </div>
 
           {/* Buttons */}
           <div className="flex gap-2 pt-4 border-t border-gray-200">
