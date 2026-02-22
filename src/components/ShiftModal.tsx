@@ -52,25 +52,35 @@ export function ShiftModal({
   const [selectedCombinationKey, setSelectedCombinationKey] = useState('')
 
   // Create flattened list of nanny + rate profile combinations
-  const nannyRateCombinations = instances.flatMap((inst) =>
-    (inst.rate_configs || []).length > 0
-      ? inst.rate_configs.map((rc) => ({
-          key: `${inst.id}|${rc.id}`,
-          instanceId: inst.id,
-          rateConfigId: rc.id,
-          nannyName: inst.profiles?.full_name || 'Unknown',
-          rateConfig: rc,
-        }))
-      : [
-          {
-            key: inst.id,
-            instanceId: inst.id,
-            rateConfigId: undefined,
-            nannyName: inst.profiles?.full_name || 'Unknown',
-            rateConfig: undefined,
-          },
-        ]
-  )
+  interface NannyRateCombo {
+    key: string
+    instanceId: string
+    rateConfigId: string | undefined
+    nannyName: string
+    rateConfig: any | undefined
+  }
+
+  const nannyRateCombinations: NannyRateCombo[] = instances.flatMap((inst) => {
+    const nannyName = inst.profiles?.full_name || 'Unknown'
+    if ((inst.rate_configs || []).length > 0) {
+      return inst.rate_configs.map((rc) => ({
+        key: `${inst.id}|${rc.id}`,
+        instanceId: inst.id,
+        rateConfigId: rc.id,
+        nannyName,
+        rateConfig: rc,
+      } as NannyRateCombo))
+    }
+    return [
+      {
+        key: inst.id,
+        instanceId: inst.id,
+        rateConfigId: undefined,
+        nannyName,
+        rateConfig: undefined,
+      } as NannyRateCombo,
+    ]
+  })
   const [startTime, setStartTime] = useState(
     editShift?.start_time ||
       editRecurringShift?.start_time ||
