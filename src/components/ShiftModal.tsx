@@ -267,7 +267,7 @@ export function ShiftModal({
               <option value="">Select a nanny</option>
               {instances.map((inst) => (
                 <option key={inst.id} value={inst.id}>
-                  {inst.households.name} — {inst.name}
+                  {inst.profiles?.full_name}
                 </option>
               ))}
             </select>
