@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Save, Trash2 } from 'lucide-react'
 import type { NannyInstanceForSelector } from '../hooks/useTimeEntries'
 import type { Shift, RecurringShift } from '../types'
@@ -49,6 +49,28 @@ export function ShiftModal({
       editRecurringShift?.nanny_instance_id ||
       (instances.length === 1 ? instances[0].id : '')
   )
+  const [selectedCombinationKey, setSelectedCombinationKey] = useState('')
+
+  // Create flattened list of nanny + rate profile combinations
+  const nannyRateCombinations = instances.flatMap((inst) =>
+    (inst.rate_configs || []).length > 0
+      ? inst.rate_configs.map((rc) => ({
+          key: `${inst.id}|${rc.id}`,
+          instanceId: inst.id,
+          rateConfigId: rc.id,
+          nannyName: inst.profiles?.full_name || 'Unknown',
+          rateConfig: rc,
+        }))
+      : [
+          {
+            key: inst.id,
+            instanceId: inst.id,
+            rateConfigId: undefined,
+            nannyName: inst.profiles?.full_name || 'Unknown',
+            rateConfig: undefined,
+          },
+        ]
+  )
   const [startTime, setStartTime] = useState(
     editShift?.start_time ||
       editRecurringShift?.start_time ||
@@ -79,6 +101,23 @@ export function ShiftModal({
 
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
+  // Initialize selectedCombinationKey when editing or when single instance
+  useEffect(() => {
+    if (!selectedCombinationKey && nannyRateCombinations.length > 0) {
+      if (instanceId) {
+        // For editing: find matching combo for the selected instance
+        const matchingCombo = nannyRateCombinations.find((c) => c.instanceId === instanceId)
+        if (matchingCombo) {
+          setSelectedCombinationKey(matchingCombo.key)
+        }
+      } else if (instances.length === 1 && nannyRateCombinations.length > 0) {
+        // For new shift with single instance: auto-select first combo
+        setSelectedCombinationKey(nannyRateCombinations[0].key)
+        setInstanceId(nannyRateCombinations[0].instanceId)
+      }
+    }
+  }, [instances.length, nannyRateCombinations, selectedCombinationKey, instanceId])
+
   const handleDelete = async () => {
     if (!editShift) return
     if (!window.confirm('Are you sure you want to delete this shift?')) return
@@ -98,8 +137,8 @@ export function ShiftModal({
     setError('')
 
     // Validate common fields
-    if (!instanceId) {
-      setError('Please select a nanny instance.')
+    if (!selectedCombinationKey) {
+      setError('Please select a nanny and rate profile.')
       return
     }
 
@@ -253,49 +292,61 @@ export function ShiftModal({
             </div>
           )}
 
-          {/* Step 1: Nanny Selection */}
+          {/* Step 1: Nanny & Rate Profile Selection */}
           <div>
             <label htmlFor="instance" className="block text-sm font-medium text-gray-700 mb-1">
-              Nanny
+              Nanny & Rate Profile
             </label>
             <select
               id="instance"
-              value={instanceId}
-              onChange={(e) => setInstanceId(e.target.value)}
+              value={selectedCombinationKey}
+              onChange={(e) => {
+                const selected = nannyRateCombinations.find((c) => c.key === e.target.value)
+                if (selected) {
+                  setSelectedCombinationKey(e.target.value)
+                  setInstanceId(selected.instanceId)
+                }
+              }}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
-              <option value="">Select a nanny</option>
-              {instances.map((inst) => (
-                <option key={inst.id} value={inst.id}>
-                  {inst.profiles?.full_name}
+              <option value="">Select a nanny & rate profile</option>
+              {nannyRateCombinations.map((combo) => (
+                <option key={combo.key} value={combo.key}>
+                  {combo.nannyName}
+                  {combo.rateConfig && ` - ${combo.rateConfig.rate_type === 'hourly' ? `$${combo.rateConfig.rate_amount}/hour` : `$${combo.rateConfig.rate_amount}/week`}`}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Step 2: Current Rate Profile Display */}
-          {instanceId && instances.find((i) => i.id === instanceId)?.rate_configs && (
+          {/* Step 2: Selected Rate Profile Display */}
+          {selectedCombinationKey && (
             <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
               <p className="text-xs text-blue-600 font-medium mb-2">Rate Profile</p>
-              {instances
-                .find((i) => i.id === instanceId)
-                ?.rate_configs?.map((rc) => (
-                  <div key={rc.id} className="text-sm text-blue-900">
-                    {rc.rate_type === 'hourly'
-                      ? `$${rc.rate_amount}/hour`
-                      : `$${rc.rate_amount}/week`}
-                    {rc.overtime_enabled && (
-                      <span className="ml-2 text-xs">
-                        (Overtime: {rc.overtime_multiplier}x after {rc.overtime_trigger_hours}h)
-                      </span>
-                    )}
-                  </div>
-                ))}
+              {nannyRateCombinations.find((c) => c.key === selectedCombinationKey)?.rateConfig && (
+                <div className="text-sm text-blue-900">
+                  {(() => {
+                    const rc = nannyRateCombinations.find((c) => c.key === selectedCombinationKey)?.rateConfig
+                    return (
+                      <>
+                        {rc?.rate_type === 'hourly'
+                          ? `$${rc?.rate_amount}/hour`
+                          : `$${rc?.rate_amount}/week`}
+                        {rc?.overtime_enabled && (
+                          <span className="ml-2 text-xs">
+                            (Overtime: {rc?.overtime_multiplier}x after {rc?.overtime_trigger_hours}h)
+                          </span>
+                        )}
+                      </>
+                    )
+                  })()}
+                </div>
+              )}
             </div>
           )}
 
           {/* Step 3: Schedule Details */}
-          {instanceId && (
+          {selectedCombinationKey && (
             <>
               {/* Shift Type Toggle (only if creating new) */}
               {!editShift && !editRecurringShift && (
