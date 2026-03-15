@@ -12,7 +12,7 @@ import {
   DollarSign,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
-import { totalHoursFromPeriods, resolveRate, calculatePay } from '../lib/pay'
+import { totalHoursFromPeriods, resolveRate, calculatePay, calculateDailyPay } from '../lib/pay'
 import type { PayBreakdown } from '../lib/pay'
 import type { TimeEntryWithPeriods } from '../hooks/useTimeEntries'
 import {
@@ -275,25 +275,46 @@ export function TimeEntryList({ entries, rates, onEdit, onRefresh, instanceNames
 
   return (
     <div className="space-y-4">
-      {sortedDates.map((date) => (
-        <div key={date}>
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 px-1">
-            {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
-          </h3>
-          <div className="space-y-2">
-            {grouped[date].map((entry) => (
-              <EntryRow
-                key={entry.id}
-                entry={entry}
-                rates={rates}
-                onEdit={onEdit}
-                onRefresh={onRefresh}
-                showInstanceName={instanceNames?.[entry.nanny_instance_id]}
-              />
-            ))}
+      {sortedDates.map((date) => {
+        const entries = grouped[date]
+
+        // Calculate daily total pay by aggregating all hours for the day
+        const dailyTotalHours = entries.reduce((sum, entry) =>
+          sum + totalHoursFromPeriods(entry.time_entry_periods), 0
+        )
+
+        // Get the rate for this date (use first entry's date to resolve rate)
+        const firstRate = rates ? resolveRate(rates, date) : null
+        const dailyPay = firstRate ? calculateDailyPay(dailyTotalHours, firstRate) : null
+
+        return (
+          <div key={date}>
+            <div className="flex items-center justify-between px-1 mb-1.5">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                {format(parseISO(date), 'EEEE, MMMM d, yyyy')}
+              </h3>
+              {dailyPay && entries.length > 0 && (
+                <span className="flex items-center gap-0.5 text-xs font-medium text-gray-600">
+                  <DollarSign size={12} />
+                  {dailyPay.totalPay.toFixed(2)}
+                </span>
+              )}
+            </div>
+            <div className="space-y-2">
+              {entries.map((entry) => (
+                <EntryRow
+                  key={entry.id}
+                  entry={entry}
+                  rates={rates}
+                  onEdit={onEdit}
+                  onRefresh={onRefresh}
+                  showInstanceName={instanceNames?.[entry.nanny_instance_id]}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
