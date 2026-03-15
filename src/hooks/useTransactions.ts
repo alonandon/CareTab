@@ -96,7 +96,7 @@ interface PayRow {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: Calculate overtime breakdown for a single entry with weekly overtime
+// Helper: Calculate overtime breakdown for a single entry
 // ---------------------------------------------------------------------------
 
 interface OvertimeBreakdown {
@@ -104,6 +104,52 @@ interface OvertimeBreakdown {
   overtimeHours: number
   regularRate: number
   overtimeRate: number
+}
+
+function calculateDailyOvertimeBreakdown(
+  entry: TERow,
+  allTimeEntries: TERow[],
+  rate: RateConfig
+): OvertimeBreakdown | null {
+  // Only calculate for daily overtime rates
+  if (!rate.overtime_enabled || rate.overtime_trigger_type !== 'daily') {
+    return null
+  }
+
+  const rateAmount = Number(rate.rate_amount)
+  const threshold = Number(rate.overtime_trigger_hours ?? 8)
+  const multiplier = Number(rate.overtime_multiplier ?? 1.5)
+  const overtimeRate = rateAmount * multiplier
+
+  // Find all entries on the same day for the same instance
+  const dayEntries = allTimeEntries
+    .filter(
+      (e) => e.date === entry.date && e.nanny_instance_id === entry.nanny_instance_id
+    )
+    .sort((a, b) => a.id.localeCompare(b.id))
+
+  // Calculate hours up to and including this entry
+  let hoursBeforeThisEntry = 0
+  let thisEntryHours = totalHoursFromPeriods(entry.time_entry_periods)
+
+  for (const e of dayEntries) {
+    if (e.id === entry.id) {
+      break
+    }
+    hoursBeforeThisEntry += totalHoursFromPeriods(e.time_entry_periods)
+  }
+
+  // Calculate split for this entry
+  const regularThreshold = Math.max(0, threshold - hoursBeforeThisEntry)
+  const regularHours = Math.min(thisEntryHours, regularThreshold)
+  const overtimeHours = Math.max(0, thisEntryHours - regularThreshold)
+
+  return {
+    regularHours: Math.round(regularHours * 100) / 100,
+    overtimeHours: Math.round(overtimeHours * 100) / 100,
+    regularRate: rateAmount,
+    overtimeRate: overtimeRate,
+  }
 }
 
 function calculateWeeklyOvertimeBreakdown(
@@ -234,8 +280,23 @@ export function useTransactions(instanceIds: string[]) {
           ? totalHoursFromPeriods(te.time_entry_periods)
           : null
       let amount = 0
+      let breakdown: OvertimeBreakdown | null = null
+
       if (rate && te.time_entry_periods.length > 0) {
-        amount = calculatePay(te.time_entry_periods, rate).totalPay
+        // Try daily overtime first, then weekly
+        breakdown = calculateDailyOvertimeBreakdown(te, timeRows, rate)
+        if (!breakdown) {
+          breakdown = calculateWeeklyOvertimeBreakdown(te, timeRows, rate)
+        }
+
+        // Calculate amount based on breakdown if available
+        if (breakdown) {
+          amount =
+            breakdown.regularHours * breakdown.regularRate +
+            breakdown.overtimeHours * breakdown.overtimeRate
+        } else {
+          amount = calculatePay(te.time_entry_periods, rate).totalPay
+        }
       } else if (rate?.rate_type === 'weekly') {
         amount = rate.rate_amount
       }
@@ -243,9 +304,6 @@ export function useTransactions(instanceIds: string[]) {
       const periods = te.time_entry_periods
         .map((p) => `${p.start_time.slice(0, 5)}–${p.end_time.slice(0, 5)}`)
         .join(', ')
-
-      // Calculate overtime breakdown for weekly overtime entries
-      const breakdown = rate ? calculateWeeklyOvertimeBreakdown(te, timeRows, rate) : null
 
       txns.push({
         id: te.id,
