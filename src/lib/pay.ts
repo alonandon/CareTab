@@ -44,6 +44,18 @@ export function resolveRate(
 // Time math helpers
 // ---------------------------------------------------------------------------
 
+/** Get the Monday of the week containing the given date */
+export function getWeekStartDate(dateStr: string): string {
+  const date = new Date(dateStr)
+  const day = date.getDay()
+  // Convert Sunday (0) to 7 for easier calculation
+  const dayOfWeek = day === 0 ? 7 : day
+  // Monday is day 1, so subtract (dayOfWeek - 1) days
+  const monday = new Date(date)
+  monday.setDate(date.getDate() - (dayOfWeek - 1))
+  return monday.toISOString().split('T')[0]
+}
+
 /** Parse "HH:MM" or "HH:MM:SS" into fractional hours */
 export function timeToHours(t: string): number {
   const [h, m] = t.split(':').map(Number)
