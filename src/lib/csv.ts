@@ -49,7 +49,7 @@ export function transactionsToCsv(transactions: Transaction[]): string {
     // For time entries with overtime breakdown, create separate rows
     if (
       t.type === 'time' &&
-      t.regularHours !== null &&
+      t.regularHours != null &&
       t.regularHours > 0
     ) {
       // Regular hours row
@@ -59,7 +59,7 @@ export function transactionsToCsv(transactions: Transaction[]): string {
           typeLabel(t.type),
           escapeField(t.description),
           t.regularHours.toFixed(2),
-          t.regularRate !== null ? t.regularRate.toFixed(2) : '',
+          t.regularRate != null ? t.regularRate.toFixed(2) : '',
           (t.regularHours * (t.regularRate ?? 0)).toFixed(2),
           statusLabel(t.status),
           escapeField(t.householdName),
@@ -68,14 +68,14 @@ export function transactionsToCsv(transactions: Transaction[]): string {
         ].join(',')
       )
       // Overtime hours row (if any)
-      if (t.overtimeHours !== null && t.overtimeHours > 0) {
+      if (t.overtimeHours != null && t.overtimeHours > 0) {
         rows.push(
           [
             format(new Date(t.date + 'T00:00:00'), 'yyyy-MM-dd'),
             typeLabel(t.type),
             escapeField(t.description),
             t.overtimeHours.toFixed(2),
-            t.overtimeRate !== null ? t.overtimeRate.toFixed(2) : '',
+            t.overtimeRate != null ? t.overtimeRate.toFixed(2) : '',
             (t.overtimeHours * (t.overtimeRate ?? 0)).toFixed(2),
             statusLabel(t.status),
             escapeField(t.householdName),
