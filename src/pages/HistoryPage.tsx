@@ -443,7 +443,7 @@ function TransactionRow({ txn }: { txn: Transaction }) {
             <span>Rate Profile</span>
             <span className="text-gray-700">{txn.instanceName}</span>
           </div>
-          {txn.type === 'time' && txn.regularHours !== null && txn.regularHours > 0 && (
+          {txn.type === 'time' && txn.regularHours != null && txn.regularHours > 0 && (
             <div className="flex justify-between">
               <span>Regular Hours</span>
               <span className="text-gray-700">
@@ -451,7 +451,7 @@ function TransactionRow({ txn }: { txn: Transaction }) {
               </span>
             </div>
           )}
-          {txn.type === 'time' && txn.overtimeHours !== null && txn.overtimeHours > 0 && (
+          {txn.type === 'time' && txn.overtimeHours != null && txn.overtimeHours > 0 && (
             <div className="flex justify-between">
               <span>Overtime Hours</span>
               <span className="text-gray-700">
@@ -459,13 +459,13 @@ function TransactionRow({ txn }: { txn: Transaction }) {
               </span>
             </div>
           )}
-          {txn.hours !== null && !txn.regularHours && (
+          {txn.hours != null && txn.regularHours == null && (
             <div className="flex justify-between">
               <span>Hours</span>
               <span className="text-gray-700">{txn.hours.toFixed(2)}</span>
             </div>
           )}
-          {txn.rate !== null && !txn.regularRate && (
+          {txn.rate != null && txn.regularRate == null && (
             <div className="flex justify-between">
               <span>Rate</span>
               <span className="text-gray-700">${txn.rate.toFixed(2)}/hr</span>
