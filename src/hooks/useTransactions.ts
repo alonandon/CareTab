@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { resolveRate, calculatePay, totalHoursFromPeriods } from '../lib/pay'
+import { resolveRate, calculatePay, totalHoursFromPeriods, getWeekStartDate } from '../lib/pay'
 import type { RateConfig, TimeEntryPeriod } from '../types'
 
 // ---------------------------------------------------------------------------
@@ -29,6 +29,11 @@ export interface Transaction {
   instanceName: string
   householdName: string
   nannyInstanceId: string
+  // Overtime breakdown (for time entries)
+  regularHours?: number | null
+  overtimeHours?: number | null
+  regularRate?: number | null
+  overtimeRate?: number | null
 }
 
 export interface TransactionFilters {
@@ -87,6 +92,69 @@ interface PayRow {
     name: string
     household_id: string
     households: { id: string; name: string }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helper: Calculate overtime breakdown for a single entry with weekly overtime
+// ---------------------------------------------------------------------------
+
+interface OvertimeBreakdown {
+  regularHours: number
+  overtimeHours: number
+  regularRate: number
+  overtimeRate: number
+}
+
+function calculateWeeklyOvertimeBreakdown(
+  entry: TERow,
+  allTimeEntries: TERow[],
+  rate: RateConfig
+): OvertimeBreakdown | null {
+  // Only calculate for weekly overtime rates
+  if (!rate.overtime_enabled || rate.overtime_trigger_type !== 'weekly') {
+    return null
+  }
+
+  const rateAmount = Number(rate.rate_amount)
+  const threshold = Number(rate.overtime_trigger_hours ?? 40)
+  const multiplier = Number(rate.overtime_multiplier ?? 1.5)
+  const overtimeRate = rateAmount * multiplier
+
+  // Get the week start date for this entry
+  const weekStart = getWeekStartDate(entry.date)
+
+  // Find all entries in the same week
+  const weekEntries = allTimeEntries
+    .filter(
+      (e) =>
+        getWeekStartDate(e.date) === weekStart &&
+        e.nanny_instance_id === entry.nanny_instance_id
+    )
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  // Calculate hours up to and including this entry
+  let hoursBeforeThisEntry = 0
+  let thisEntryHours = totalHoursFromPeriods(entry.time_entry_periods)
+
+  for (const e of weekEntries) {
+    if (e.date < entry.date) {
+      hoursBeforeThisEntry += totalHoursFromPeriods(e.time_entry_periods)
+    } else if (e.date === entry.date && e.id === entry.id) {
+      break
+    }
+  }
+
+  // Calculate split for this entry
+  const regularThreshold = Math.max(0, threshold - hoursBeforeThisEntry)
+  const regularHours = Math.min(thisEntryHours, regularThreshold)
+  const overtimeHours = Math.max(0, thisEntryHours - regularThreshold)
+
+  return {
+    regularHours: Math.round(regularHours * 100) / 100,
+    overtimeHours: Math.round(overtimeHours * 100) / 100,
+    regularRate: rateAmount,
+    overtimeRate: overtimeRate,
   }
 }
 
@@ -176,6 +244,9 @@ export function useTransactions(instanceIds: string[]) {
         .map((p) => `${p.start_time.slice(0, 5)}–${p.end_time.slice(0, 5)}`)
         .join(', ')
 
+      // Calculate overtime breakdown for weekly overtime entries
+      const breakdown = rate ? calculateWeeklyOvertimeBreakdown(te, timeRows, rate) : null
+
       txns.push({
         id: te.id,
         date: te.date,
@@ -189,6 +260,10 @@ export function useTransactions(instanceIds: string[]) {
         instanceName: ni?.name ?? '',
         householdName: ni?.households?.name ?? '',
         nannyInstanceId: te.nanny_instance_id,
+        regularHours: breakdown?.regularHours ?? null,
+        overtimeHours: breakdown?.overtimeHours ?? null,
+        regularRate: breakdown?.regularRate ?? null,
+        overtimeRate: breakdown?.overtimeRate ?? null,
       })
     }
 
