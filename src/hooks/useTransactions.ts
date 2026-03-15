@@ -128,12 +128,6 @@ function calculateDailyOvertimeBreakdown(
     )
     .sort((a, b) => a.id.localeCompare(b.id))
 
-  // Calculate total hours for the day
-  const totalDailyHours = dayEntries.reduce(
-    (sum, e) => sum + totalHoursFromPeriods(e.time_entry_periods),
-    0
-  )
-
   // Calculate hours up to and including this entry
   let hoursBeforeThisEntry = 0
   let thisEntryHours = totalHoursFromPeriods(entry.time_entry_periods)
