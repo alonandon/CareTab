@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { resolveRate, calculatePay } from '../lib/pay'
+import { resolveRate, calculatePay, calculateWeeklyPay, totalHoursFromPeriods, getWeekStartDate } from '../lib/pay'
 import type { RateConfig, TimeEntryPeriod } from '../types'
 
 // ---------------------------------------------------------------------------
@@ -42,23 +42,111 @@ export function calculateBalance(
   let approvedTimePay = 0
   let pendingTimePay = 0
 
-  for (const entry of timeEntries) {
-    const rate = resolveRate(rates, entry.date)
-    if (!rate) continue
+  // Check if we need to use weekly overtime calculation
+  const hasWeeklyOvertime = rates.some(
+    (r) => r.overtime_enabled && r.overtime_trigger_type === 'weekly'
+  )
 
-    let entryPay: number
-    if (entry.time_entry_periods.length > 0) {
-      entryPay = calculatePay(entry.time_entry_periods, rate).totalPay
-    } else if (rate.rate_type === 'weekly') {
-      entryPay = rate.rate_amount
-    } else {
-      continue
+  if (hasWeeklyOvertime) {
+    // Group entries by week, accounting for both status and week start date
+    const weeklyGroups: Record<
+      string,
+      {
+        weekStart: string
+        rate: RateConfig | null
+        entries: { entry: TimeEntryForCalc; hours: number; status: string }[]
+      }
+    > = {}
+
+    for (const entry of timeEntries) {
+      const rate = resolveRate(rates, entry.date)
+      if (!rate) continue
+
+      // Only use weekly calculation if this rate has weekly overtime
+      if (rate.overtime_enabled && rate.overtime_trigger_type === 'weekly') {
+        const weekStart = getWeekStartDate(entry.date)
+        const key = `${weekStart}:${entry.status}:${rate.id}`
+
+        if (!weeklyGroups[key]) {
+          weeklyGroups[key] = {
+            weekStart,
+            rate,
+            entries: [],
+          }
+        }
+
+        const hours =
+          entry.time_entry_periods.length > 0
+            ? totalHoursFromPeriods(entry.time_entry_periods)
+            : 0
+
+        weeklyGroups[key].entries.push({
+          entry,
+          hours,
+          status: entry.status,
+        })
+      }
     }
 
-    if (entry.status === 'approved') {
-      approvedTimePay += entryPay
-    } else if (entry.status === 'pending') {
-      pendingTimePay += entryPay
+    // Calculate pay for each week group
+    for (const group of Object.values(weeklyGroups)) {
+      if (!group.rate) continue
+
+      const dailyHours = group.entries.map((e) => e.hours)
+      const weekPay = calculateWeeklyPay(dailyHours, group.rate).totalPay
+
+      if (group.entries[0].status === 'approved') {
+        approvedTimePay += weekPay
+      } else if (group.entries[0].status === 'pending') {
+        pendingTimePay += weekPay
+      }
+    }
+
+    // Handle non-weekly-overtime entries normally
+    for (const entry of timeEntries) {
+      const rate = resolveRate(rates, entry.date)
+      if (!rate) continue
+
+      // Skip if this entry uses weekly overtime (already processed above)
+      if (rate.overtime_enabled && rate.overtime_trigger_type === 'weekly') {
+        continue
+      }
+
+      let entryPay: number
+      if (entry.time_entry_periods.length > 0) {
+        entryPay = calculatePay(entry.time_entry_periods, rate).totalPay
+      } else if (rate.rate_type === 'weekly') {
+        entryPay = rate.rate_amount
+      } else {
+        continue
+      }
+
+      if (entry.status === 'approved') {
+        approvedTimePay += entryPay
+      } else if (entry.status === 'pending') {
+        pendingTimePay += entryPay
+      }
+    }
+  } else {
+    // Original behavior for non-weekly-overtime rates
+    for (const entry of timeEntries) {
+      const rate = resolveRate(rates, entry.date)
+      if (!rate) continue
+
+      let entryPay: number
+      if (entry.time_entry_periods.length > 0) {
+        entryPay = calculatePay(entry.time_entry_periods, rate).totalPay
+      } else if (rate.rate_type === 'weekly') {
+        entryPay = rate.rate_amount
+      } else {
+        continue
+      }
+
+      if (entry.status === 'approved') {
+        approvedTimePay += entryPay
+      } else if (entry.status === 'pending') {
+        pendingTimePay += entryPay
+      }
     }
   }
 
